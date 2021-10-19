@@ -1,6 +1,7 @@
 <?xml version="1.0" encoding="utf-8"?>
 <androidx.constraintlayout.widget.ConstraintLayout xmlns:android="http://schemas.android.com/apk/res/android"
     xmlns:app="http://schemas.android.com/apk/res-auto"
+    xmlns:map="http://schemas.android.com/apk/res-auto"
     xmlns:tools="http://schemas.android.com/tools"
     android:layout_width="match_parent"
     android:layout_height="match_parent"
@@ -10,40 +11,123 @@
         android:id="@+id/linearLayout"
         android:layout_width="match_parent"
         android:layout_height="wrap_content"
-        android:orientation="horizontal"
-        android:weightSum="10"
+        android:orientation="vertical"
         app:layout_constraintEnd_toEndOf="parent"
         app:layout_constraintStart_toStartOf="parent"
         app:layout_constraintTop_toTopOf="parent">
 
-        <EditText
-            android:id="@+id/searchText"
-            android:layout_width="0dp"
-            android:layout_height="50dp"
-            android:layout_weight="8"
+        <LinearLayout
+            android:layout_width="match_parent"
+            android:layout_height="wrap_content"
+            android:orientation="horizontal"
             android:background="@drawable/search_edt"
-            android:hint="Search For..."
-            android:inputType="textPersonName"
-            android:paddingStart="20dp"
-            android:textSize="16sp"
-            android:textStyle="bold" />
-        <ImageView
-            android:id="@+id/searchIcon"
-            android:layout_width="0dp"
-            android:layout_weight="1"
-            android:layout_marginRight="5dp"
-            android:layout_gravity="center"
-            android:layout_height="30dp"
-            app:srcCompat="@mipmap/search_icon" />
-        <ImageView
-            android:id="@+id/getLocationName"
-            android:layout_width="0dp"
-            android:layout_weight="1"
-            android:layout_marginRight="5dp"
-            android:layout_gravity="center"
-            android:layout_height="30dp"
-            app:tint="@color/black"
-            app:srcCompat="@mipmap/ic_22222" />
+            android:elevation="3dp"
+            android:weightSum="10">
+
+            <EditText
+                android:id="@+id/searchText"
+                android:layout_width="0dp"
+                android:layout_height="50dp"
+                android:layout_weight="9"
+                android:hint="Search For..."
+                android:inputType="textPersonName"
+                android:background="@drawable/search_edt"
+                android:paddingStart="20dp"
+                android:layout_margin="5dp"
+                android:textSize="16sp"
+                android:textStyle="bold" />
+
+            <ImageView
+                android:id="@+id/searchIcon"
+                android:layout_width="0dp"
+                android:layout_height="30dp"
+                android:layout_gravity="center"
+                android:layout_marginRight="5dp"
+                android:layout_weight="1"
+                app:srcCompat="@mipmap/search_icon" />
+
+        </LinearLayout>
+
+        <LinearLayout
+            android:layout_width="match_parent"
+            android:layout_height="wrap_content"
+            android:layout_marginTop="5dp"
+            android:layout_marginBottom="5dp"
+            android:orientation="horizontal">
+
+            <LinearLayout
+                android:id="@+id/getLocationName"
+                android:layout_width="wrap_content"
+                android:layout_height="wrap_content"
+                android:layout_gravity="center"
+                android:layout_margin="5dp"
+                android:background="@drawable/search_edt"
+                android:elevation="3dp"
+                android:orientation="vertical">
+
+                <ImageView
+                    android:layout_width="35dp"
+                    android:layout_height="35dp"
+                    android:layout_gravity="center"
+                    app:srcCompat="@drawable/ic_baseline_map_24"
+                    app:tint="#F42E8B"/>
+                <TextView
+                    android:layout_width="wrap_content"
+                    android:layout_height="wrap_content"
+                    android:textSize="11dp"
+                    android:layout_margin="5dp"
+                    android:text="Current"/>
+            </LinearLayout>
+
+            <LinearLayout
+                android:id="@+id/moveAnimationCam"
+                android:layout_width="wrap_content"
+                android:layout_height="wrap_content"
+                android:layout_gravity="center"
+                android:layout_margin="5dp"
+                android:background="@drawable/search_edt"
+                android:elevation="3dp"
+                android:orientation="vertical">
+
+                <ImageView
+                    android:layout_width="35dp"
+                    android:layout_height="35dp"
+                    android:layout_gravity="center"
+                    app:srcCompat="@drawable/camera_icon"
+                    app:tint="#F42E8B" />
+                <TextView
+                    android:layout_width="wrap_content"
+                    android:layout_height="wrap_content"
+                    android:textSize="11dp"
+                    android:layout_margin="5dp"
+                    android:text="Anim Cam"/>
+            </LinearLayout>
+
+            <LinearLayout
+                android:id="@+id/stickMap"
+                android:layout_width="wrap_content"
+                android:layout_height="wrap_content"
+                android:layout_gravity="center"
+                android:layout_margin="5dp"
+                android:background="@drawable/search_edt"
+                android:elevation="3dp"
+                android:orientation="vertical">
+
+                <ImageView
+                    android:layout_width="35dp"
+                    android:layout_height="35dp"
+                    android:layout_gravity="center"
+                    app:srcCompat="@drawable/ic_baseline_push_pin_24"
+                    app:tint="#F42E8B" />
+                <TextView
+                    android:layout_width="wrap_content"
+                    android:layout_height="wrap_content"
+                    android:textSize="11dp"
+                    android:layout_margin="5dp"
+                    android:text="Stick Map"/><!-- Restrict Google Map to Specific Area -->
+            </LinearLayout>
+
+        </LinearLayout>
 
     </LinearLayout>
 

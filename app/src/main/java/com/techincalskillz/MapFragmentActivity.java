@@ -23,6 +23,7 @@ import android.view.MenuItem;
 import android.view.View;
 import android.widget.EditText;
 import android.widget.ImageView;
+import android.widget.LinearLayout;
 import android.widget.Toast;
 
 import com.google.android.gms.common.ConnectionResult;
@@ -43,6 +44,7 @@ import com.google.android.gms.maps.GoogleMap;
 import com.google.android.gms.maps.MapFragment;
 import com.google.android.gms.maps.OnMapReadyCallback;
 import com.google.android.gms.maps.model.LatLng;
+import com.google.android.gms.maps.model.LatLngBounds;
 import com.google.android.gms.maps.model.MarkerOptions;
 import com.google.android.gms.tasks.OnCompleteListener;
 import com.google.android.gms.tasks.OnFailureListener;
@@ -64,8 +66,8 @@ public class MapFragmentActivity extends AppCompatActivity implements OnMapReady
 
     GoogleMap googleMap;
     EditText searchText;
-    ImageView searchIcon, getLocationName;
-
+    ImageView searchIcon;
+    LinearLayout getLocationName,moveAnimationCam,stickMap;
     LocationRequest locationRequest;
     FusedLocationProviderClient fusedLocationProviderClient;
 
@@ -78,6 +80,8 @@ public class MapFragmentActivity extends AppCompatActivity implements OnMapReady
         searchText = findViewById(R.id.searchText);
         searchIcon = findViewById(R.id.searchIcon);
         getLocationName = findViewById(R.id.getLocationName);
+        moveAnimationCam = findViewById(R.id.moveAnimationCam);
+        stickMap = findViewById(R.id.stickMap);
 
         checkPermissions(savedInstanceState);
 
@@ -121,6 +125,7 @@ public class MapFragmentActivity extends AppCompatActivity implements OnMapReady
             public void onClick(View view) {
 
 
+                //reverse geocoder
                 Geocoder geocoder = new Geocoder(MapFragmentActivity.this, Locale.getDefault());
                 try {
                     List<Address> addressList = geocoder.getFromLocation(6.8649, 79.8997, 1); // get only one results. you can add more
@@ -128,12 +133,68 @@ public class MapFragmentActivity extends AppCompatActivity implements OnMapReady
                     if (addressList.size() > 0) {
 
 
-                        Toast.makeText(MapFragmentActivity.this, addressList.get(0).getCountryName() + " : country code " + addressList.get(0).getCountryCode(), Toast.LENGTH_SHORT).show();
+                        Toast.makeText(MapFragmentActivity.this, "Country "+addressList.get(0).getCountryName()+" city:"+addressList.get(0).getLocality() + " : country code:" + addressList.get(0).getCountryCode(), Toast.LENGTH_SHORT).show();
 
                     }
                 } catch (IOException e) {
                     e.printStackTrace();
                 }
+
+            }
+        });
+        moveAnimationCam.setOnClickListener(new View.OnClickListener() {
+            @Override
+            public void onClick(View view) {
+
+
+                /*LatLng latLng = new LatLng(6.7230, 80.0647); // latitude and Longitude
+                MarkerOptions markerOptions = new MarkerOptions();
+                markerOptions.position(latLng);
+                googleMap.addMarker(markerOptions);
+                CameraUpdate cameraUpdate = CameraUpdateFactory.newLatLngZoom(latLng, 12); // max 21. 1world, 5Continents, 10Cities, 15Streets, 20Buildings
+                googleMap.animateCamera(cameraUpdate); // moving to position*/
+
+                //animation with time
+
+                googleMap.animateCamera(CameraUpdateFactory.zoomTo(2.0f));
+                LatLng latLng = new LatLng(6.7230, 80.0647);
+                MarkerOptions markerOptions = new MarkerOptions();
+                markerOptions.position(latLng);
+                googleMap.addMarker(markerOptions);
+                CameraUpdate cameraUpdate = CameraUpdateFactory.newLatLngZoom(latLng,15);
+                googleMap.animateCamera(cameraUpdate, 4000, new GoogleMap.CancelableCallback() {
+                    @Override
+                    public void onFinish() {
+
+                    }
+
+                    @Override
+                    public void onCancel() {
+
+                    }
+                });
+
+            }
+        });
+        stickMap.setOnClickListener(new View.OnClickListener() {
+            @Override
+            public void onClick(View view) {
+
+
+               double bottomBoundry= 6.7230-0.3;
+               double leftoundry= 80.0647-0.3;
+               double topBoundry= 6.7230+0.3;
+               double rightBoundry= 80.0647+0.3;
+
+                LatLngBounds latLngBounds= new LatLngBounds(new LatLng(bottomBoundry,leftoundry),new LatLng(topBoundry,rightBoundry));
+
+                //googleMap.animateCamera(CameraUpdateFactory.newLatLngBounds(latLngBounds,1));
+                googleMap.setLatLngBoundsForCameraTarget(latLngBounds);
+                //googleMap.animateCamera(CameraUpdateFactory.newLatLngBounds(latLngBounds,400,400,1));
+
+                MarkerOptions markerOptions = new MarkerOptions();
+                markerOptions.position(latLngBounds.getCenter());//getcenter retruns latlan values
+                googleMap.addMarker(markerOptions);
             }
         });
 
@@ -163,7 +224,7 @@ public class MapFragmentActivity extends AppCompatActivity implements OnMapReady
         markerOptions.title("My Position");
         markerOptions.position(latLng);
         googleMap.addMarker(markerOptions);
-        CameraUpdate cameraUpdate = CameraUpdateFactory.newLatLngZoom(latLng, 9);
+        CameraUpdate cameraUpdate = CameraUpdateFactory.newLatLngZoom(latLng, 15); // max 21. 1world, 5Continents, 10Cities, 15Streets, 20Buildings
         //googleMap.moveCamera(cameraUpdate); //directly show
         googleMap.animateCamera(cameraUpdate); // moving to position
 
@@ -178,7 +239,8 @@ public class MapFragmentActivity extends AppCompatActivity implements OnMapReady
 
         //googleMap.getUiSettings().setRotateGesturesEnabled(false);// map cant Rotate
         googleMap.getUiSettings().setRotateGesturesEnabled(true);
-
+        googleMap.getUiSettings().setTiltGesturesEnabled(true);
+        googleMap.getUiSettings().setMapToolbarEnabled(true); // when you tap on marker, shows open from google map and direction
 
         //to get current location maker on the map
         if (ActivityCompat.checkSelfPermission(this, Manifest.permission.ACCESS_FINE_LOCATION) != PackageManager.PERMISSION_GRANTED && ActivityCompat.checkSelfPermission(this, Manifest.permission.ACCESS_COARSE_LOCATION) != PackageManager.PERMISSION_GRANTED) {
@@ -192,10 +254,6 @@ public class MapFragmentActivity extends AppCompatActivity implements OnMapReady
                 return true;
             }
         });*/
-
-
-        Location myLocation = googleMap.getMyLocation();
-
 
     }
 
@@ -249,7 +307,7 @@ public class MapFragmentActivity extends AppCompatActivity implements OnMapReady
             return;
         }
 // get Current location update continuously
-        fusedLocationProviderClient.requestLocationUpdates(locationRequest, new LocationCallback() {
+/*        fusedLocationProviderClient.requestLocationUpdates(locationRequest, new LocationCallback() {
             @Override
             public void onLocationResult(@NonNull LocationResult locationResult) {
                 super.onLocationResult(locationResult);
@@ -257,15 +315,15 @@ public class MapFragmentActivity extends AppCompatActivity implements OnMapReady
                 Toast.makeText(MapFragmentActivity.this, "Latitude: "+locationResult.getLastLocation().getLatitude()+" Longitude: "+locationResult.getLastLocation().getLongitude(), Toast.LENGTH_SHORT).show();
 
             }
-        }, Looper.getMainLooper());
+        }, Looper.getMainLooper());*/
 // get Current location update only one time
-/*        fusedLocationProviderClient.getLastLocation().addOnSuccessListener(new OnSuccessListener<Location>() {
+        fusedLocationProviderClient.getLastLocation().addOnSuccessListener(new OnSuccessListener<Location>() {
             @Override
             public void onSuccess(Location location) {
                 Toast.makeText(MapFragmentActivity.this, "Latitude1: "+location.getLatitude()+" Longitude1: "+location.getLongitude(), Toast.LENGTH_SHORT).show();
 
             }
-        });*/
+        });
     }
 
     @Override
@@ -291,7 +349,7 @@ public class MapFragmentActivity extends AppCompatActivity implements OnMapReady
 
                 //google map required Google play services in the phone
                 if (checkGooglePlayServices()) {
-                    Toast.makeText(MapFragmentActivity.this, "Google play services Available", Toast.LENGTH_SHORT).show();
+                    //Toast.makeText(MapFragmentActivity.this, "Google play services Available", Toast.LENGTH_SHORT).show();
                     showMap(savedInstanceState);
                 } else {
                     Toast.makeText(MapFragmentActivity.this, "Google play services NOT  Available", Toast.LENGTH_SHORT).show();
@@ -317,7 +375,7 @@ public class MapFragmentActivity extends AppCompatActivity implements OnMapReady
     }
 
 
-    private boolean checkGooglePlayServices() {
+    private boolean     checkGooglePlayServices() {
 
         GoogleApiAvailability googleApiAvailability = GoogleApiAvailability.getInstance();
         int result = googleApiAvailability.isGooglePlayServicesAvailable(this);
