@@ -45,6 +45,7 @@ import com.google.android.gms.maps.MapFragment;
 import com.google.android.gms.maps.OnMapReadyCallback;
 import com.google.android.gms.maps.model.LatLng;
 import com.google.android.gms.maps.model.LatLngBounds;
+import com.google.android.gms.maps.model.Marker;
 import com.google.android.gms.maps.model.MarkerOptions;
 import com.google.android.gms.tasks.OnCompleteListener;
 import com.google.android.gms.tasks.OnFailureListener;
@@ -67,10 +68,10 @@ public class MapFragmentActivity extends AppCompatActivity implements OnMapReady
     GoogleMap googleMap;
     EditText searchText;
     ImageView searchIcon;
-    LinearLayout getLocationName,moveAnimationCam,stickMap;
+    LinearLayout getLocationName, moveAnimationCam, stickMap, currentLocation;
     LocationRequest locationRequest;
     FusedLocationProviderClient fusedLocationProviderClient;
-
+    boolean currentLocationUpdate = false;
 
     @Override
     protected void onCreate(Bundle savedInstanceState) {
@@ -82,6 +83,7 @@ public class MapFragmentActivity extends AppCompatActivity implements OnMapReady
         getLocationName = findViewById(R.id.getLocationName);
         moveAnimationCam = findViewById(R.id.moveAnimationCam);
         stickMap = findViewById(R.id.stickMap);
+        currentLocation = findViewById(R.id.currentLocation);
 
         checkPermissions(savedInstanceState);
 
@@ -102,15 +104,7 @@ public class MapFragmentActivity extends AppCompatActivity implements OnMapReady
                         if (addressList.size() > 0) {
 
                             // lati and longi value of first results in addressList
-                            LatLng latLng = new LatLng(addressList.get(0).getLatitude(), addressList.get(0).getLongitude());
-
-                            MarkerOptions markerOptions = new MarkerOptions();
-                            markerOptions.title("My Position");
-                            markerOptions.position(latLng);
-                            googleMap.addMarker(markerOptions);
-                            CameraUpdate cameraUpdate = CameraUpdateFactory.newLatLngZoom(latLng, 12);
-                            googleMap.animateCamera(cameraUpdate); // moving to position
-
+                            markOnMap(addressList.get(0).getLatitude(), addressList.get(0).getLongitude(), 12);
 
                         }
                     } catch (IOException e) {
@@ -120,6 +114,8 @@ public class MapFragmentActivity extends AppCompatActivity implements OnMapReady
 
             }
         });
+
+
         getLocationName.setOnClickListener(new View.OnClickListener() {
             @Override
             public void onClick(View view) {
@@ -133,7 +129,7 @@ public class MapFragmentActivity extends AppCompatActivity implements OnMapReady
                     if (addressList.size() > 0) {
 
 
-                        Toast.makeText(MapFragmentActivity.this, "Country "+addressList.get(0).getCountryName()+" city:"+addressList.get(0).getLocality() + " : country code:" + addressList.get(0).getCountryCode(), Toast.LENGTH_SHORT).show();
+                        Toast.makeText(MapFragmentActivity.this, "Country " + addressList.get(0).getCountryName() + " city:" + addressList.get(0).getLocality() + " : country code:" + addressList.get(0).getCountryCode(), Toast.LENGTH_SHORT).show();
 
                     }
                 } catch (IOException e) {
@@ -146,7 +142,6 @@ public class MapFragmentActivity extends AppCompatActivity implements OnMapReady
             @Override
             public void onClick(View view) {
 
-
                 /*LatLng latLng = new LatLng(6.7230, 80.0647); // latitude and Longitude
                 MarkerOptions markerOptions = new MarkerOptions();
                 markerOptions.position(latLng);
@@ -156,23 +151,8 @@ public class MapFragmentActivity extends AppCompatActivity implements OnMapReady
 
                 //animation with time
 
-                googleMap.animateCamera(CameraUpdateFactory.zoomTo(2.0f));
-                LatLng latLng = new LatLng(6.7230, 80.0647);
-                MarkerOptions markerOptions = new MarkerOptions();
-                markerOptions.position(latLng);
-                googleMap.addMarker(markerOptions);
-                CameraUpdate cameraUpdate = CameraUpdateFactory.newLatLngZoom(latLng,15);
-                googleMap.animateCamera(cameraUpdate, 4000, new GoogleMap.CancelableCallback() {
-                    @Override
-                    public void onFinish() {
+                markOnMap(6.7230, 80.0647, 15);
 
-                    }
-
-                    @Override
-                    public void onCancel() {
-
-                    }
-                });
 
             }
         });
@@ -181,12 +161,12 @@ public class MapFragmentActivity extends AppCompatActivity implements OnMapReady
             public void onClick(View view) {
 
 
-               double bottomBoundry= 6.7230-0.3;
-               double leftoundry= 80.0647-0.3;
-               double topBoundry= 6.7230+0.3;
-               double rightBoundry= 80.0647+0.3;
+                double bottomBoundry = 6.7230 - 0.3;
+                double leftoundry = 80.0647 - 0.3;
+                double topBoundry = 6.7230 + 0.3;
+                double rightBoundry = 80.0647 + 0.3;
 
-                LatLngBounds latLngBounds= new LatLngBounds(new LatLng(bottomBoundry,leftoundry),new LatLng(topBoundry,rightBoundry));
+                LatLngBounds latLngBounds = new LatLngBounds(new LatLng(bottomBoundry, leftoundry), new LatLng(topBoundry, rightBoundry));
 
                 //googleMap.animateCamera(CameraUpdateFactory.newLatLngBounds(latLngBounds,1));
                 googleMap.setLatLngBoundsForCameraTarget(latLngBounds);
@@ -195,6 +175,108 @@ public class MapFragmentActivity extends AppCompatActivity implements OnMapReady
                 MarkerOptions markerOptions = new MarkerOptions();
                 markerOptions.position(latLngBounds.getCenter());//getcenter retruns latlan values
                 googleMap.addMarker(markerOptions);
+            }
+        });
+
+        currentLocation.setOnClickListener(new View.OnClickListener() {
+            @Override
+            public void onClick(View view) {
+
+                // go to  CheckGps() to change location update time
+
+                if (currentLocationUpdate == true) {
+                    fusedLocationProviderClient = LocationServices.getFusedLocationProviderClient(MapFragmentActivity.this);
+
+                    if (ActivityCompat.checkSelfPermission(MapFragmentActivity.this, Manifest.permission.ACCESS_FINE_LOCATION)
+                            != PackageManager.PERMISSION_GRANTED && ActivityCompat.checkSelfPermission(MapFragmentActivity.this, Manifest.permission.ACCESS_COARSE_LOCATION)
+                            != PackageManager.PERMISSION_GRANTED) {
+
+                        return;
+                    }
+                    // get Current location update continuously and app in background also
+                    fusedLocationProviderClient.requestLocationUpdates(locationRequest, new LocationCallback() {
+                        @Override
+                        public void onLocationResult(@NonNull LocationResult locationResult) {
+                            super.onLocationResult(locationResult);
+
+                            //  Toast.makeText(MapFragmentActivity.this, "Latitude: "+locationResult.getLastLocation().getLatitude()+" Longitude: "+locationResult.getLastLocation().getLongitude(), Toast.LENGTH_SHORT).show();
+
+                            System.out.println("aaaaaaaa " + "Latitude: " + locationResult.getLastLocation().getLatitude() + " Longitude: " + locationResult.getLastLocation().getLongitude());
+                        }
+                    }, Looper.getMainLooper());
+
+                    // get Current location update only one time
+                    /*fusedLocationProviderClient.getLastLocation().addOnSuccessListener(new OnSuccessListener<Location>() {
+                        @Override
+                        public void onSuccess(Location location) {
+                            Toast.makeText(MapFragmentActivity.this, "Latitude1: " + location.getLatitude() + " Longitude1: " + location.getLongitude(), Toast.LENGTH_SHORT).show();
+                            markOnMap(location.getLatitude(),location.getLongitude(),15);
+                        }
+                    });*/
+
+
+                }
+            }
+
+        });
+
+    }
+
+    @Override
+    protected void onPause() {
+        super.onPause();
+        if (fusedLocationProviderClient != null) {
+            if (ActivityCompat.checkSelfPermission(this, Manifest.permission.ACCESS_FINE_LOCATION) != PackageManager.PERMISSION_GRANTED && ActivityCompat.checkSelfPermission(this, Manifest.permission.ACCESS_COARSE_LOCATION) != PackageManager.PERMISSION_GRANTED) {
+                return;
+            }
+            fusedLocationProviderClient.requestLocationUpdates(locationRequest, new LocationCallback() {
+                @Override
+                public void onLocationResult(@NonNull LocationResult locationResult) {
+                    super.onLocationResult(locationResult);
+                }
+            }, Looper.getMainLooper());
+        }
+    }
+    @Override
+    protected void onStop() {
+        super.onStop();
+        if (fusedLocationProviderClient != null) {
+            if (ActivityCompat.checkSelfPermission(this, Manifest.permission.ACCESS_FINE_LOCATION) != PackageManager.PERMISSION_GRANTED && ActivityCompat.checkSelfPermission(this, Manifest.permission.ACCESS_COARSE_LOCATION) != PackageManager.PERMISSION_GRANTED) {
+                return;
+            }
+            fusedLocationProviderClient.requestLocationUpdates(locationRequest, new LocationCallback() {
+                @Override
+                public void onLocationResult(@NonNull LocationResult locationResult) {
+                    super.onLocationResult(locationResult);
+                }
+            }, Looper.getMainLooper());
+        }
+    }
+
+    public void markOnMap(double latitude, double longitude, float zoomLevel) {
+
+        googleMap.clear(); // clear map and remove markers
+
+        LatLng latLng = new LatLng(latitude, longitude);
+        MarkerOptions markerOptions = new MarkerOptions();
+        markerOptions.title("My Position");
+        markerOptions.position(latLng);
+        // googleMap.addMarker(markerOptions).remove();
+        googleMap.addMarker(markerOptions);
+        CameraUpdate cameraUpdate = CameraUpdateFactory.newLatLngZoom(latLng, zoomLevel);  //max zoom 21. 1world, 5Continents, 10Cities, 15Streets, 20Buildings
+        //googleMap.moveCamera(cameraUpdate); //directly show
+        // googleMap.animateCamera(cameraUpdate); // moving to position without time
+
+        googleMap.animateCamera(CameraUpdateFactory.zoomTo(2.0f));
+        googleMap.animateCamera(cameraUpdate, 3000, new GoogleMap.CancelableCallback() { // moving to position with time
+            @Override
+            public void onFinish() {
+
+            }
+
+            @Override
+            public void onCancel() {
+
             }
         });
 
@@ -212,21 +294,13 @@ public class MapFragmentActivity extends AppCompatActivity implements OnMapReady
 
         CheckGps();
 
-
-
     }
 
     @Override
     public void onMapReady(@NonNull GoogleMap googleMap) {
         this.googleMap = googleMap;
-        LatLng latLng = new LatLng(6.8649, 79.8997); // latitude and Longitude
-        MarkerOptions markerOptions = new MarkerOptions();
-        markerOptions.title("My Position");
-        markerOptions.position(latLng);
-        googleMap.addMarker(markerOptions);
-        CameraUpdate cameraUpdate = CameraUpdateFactory.newLatLngZoom(latLng, 15); // max 21. 1world, 5Continents, 10Cities, 15Streets, 20Buildings
-        //googleMap.moveCamera(cameraUpdate); //directly show
-        googleMap.animateCamera(cameraUpdate); // moving to position
+
+        markOnMap(6.8649, 79.8997, 15);
 
         googleMap.getUiSettings().setZoomControlsEnabled(true);
         googleMap.getUiSettings().setCompassEnabled(true); // Compass not showing until you rotate the map
@@ -260,8 +334,8 @@ public class MapFragmentActivity extends AppCompatActivity implements OnMapReady
     private void CheckGps() {
         locationRequest = LocationRequest.create();
         locationRequest.setPriority(LocationRequest.PRIORITY_HIGH_ACCURACY);
-        locationRequest.setInterval(5000);
-        locationRequest.setFastestInterval(3000);
+        locationRequest.setInterval(5000); // location update time
+        locationRequest.setFastestInterval(3000); // location update time
 
         LocationSettingsRequest.Builder builder = new LocationSettingsRequest.Builder()
                 .addLocationRequest(locationRequest)
@@ -276,7 +350,7 @@ public class MapFragmentActivity extends AppCompatActivity implements OnMapReady
                 try {
                     LocationSettingsResponse response = task.getResult(ApiException.class);
 
-                    GetCurrentLocationUpdate();
+                    currentLocationUpdate = true;
 
                     //  Toast.makeText(MapFragmentActivity.this, "Gps is already enable", Toast.LENGTH_SHORT).show();
                 } catch (ApiException e) {
@@ -297,34 +371,6 @@ public class MapFragmentActivity extends AppCompatActivity implements OnMapReady
         });
     }
 
-
-
-    private void GetCurrentLocationUpdate() {
-        fusedLocationProviderClient = LocationServices.getFusedLocationProviderClient(MapFragmentActivity.this);
-
-        if (ActivityCompat.checkSelfPermission(this, Manifest.permission.ACCESS_FINE_LOCATION) != PackageManager.PERMISSION_GRANTED && ActivityCompat.checkSelfPermission(this, Manifest.permission.ACCESS_COARSE_LOCATION) != PackageManager.PERMISSION_GRANTED) {
-
-            return;
-        }
-// get Current location update continuously
-/*        fusedLocationProviderClient.requestLocationUpdates(locationRequest, new LocationCallback() {
-            @Override
-            public void onLocationResult(@NonNull LocationResult locationResult) {
-                super.onLocationResult(locationResult);
-
-                Toast.makeText(MapFragmentActivity.this, "Latitude: "+locationResult.getLastLocation().getLatitude()+" Longitude: "+locationResult.getLastLocation().getLongitude(), Toast.LENGTH_SHORT).show();
-
-            }
-        }, Looper.getMainLooper());*/
-// get Current location update only one time
-        fusedLocationProviderClient.getLastLocation().addOnSuccessListener(new OnSuccessListener<Location>() {
-            @Override
-            public void onSuccess(Location location) {
-                Toast.makeText(MapFragmentActivity.this, "Latitude1: "+location.getLatitude()+" Longitude1: "+location.getLongitude(), Toast.LENGTH_SHORT).show();
-
-            }
-        });
-    }
 
     @Override
     protected void onActivityResult(int requestCode, int resultCode, @Nullable Intent data) {
@@ -375,7 +421,7 @@ public class MapFragmentActivity extends AppCompatActivity implements OnMapReady
     }
 
 
-    private boolean     checkGooglePlayServices() {
+    private boolean checkGooglePlayServices() {
 
         GoogleApiAvailability googleApiAvailability = GoogleApiAvailability.getInstance();
         int result = googleApiAvailability.isGooglePlayServicesAvailable(this);
