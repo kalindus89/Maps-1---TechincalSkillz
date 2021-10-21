@@ -16,8 +16,10 @@ import android.location.Geocoder;
 import android.location.Location;
 import android.net.Uri;
 import android.os.Bundle;
+import android.os.HandlerThread;
 import android.os.Looper;
 import android.provider.Settings;
+import android.util.Log;
 import android.view.Menu;
 import android.view.MenuItem;
 import android.view.View;
@@ -72,7 +74,7 @@ public class MapFragmentActivity extends AppCompatActivity implements OnMapReady
     LocationRequest locationRequest;
     FusedLocationProviderClient fusedLocationProviderClient;
     boolean currentLocationUpdate = false;
-
+    HandlerThread handlerThread;
     LocationCallback locationCallBack;
 
     @Override
@@ -88,7 +90,6 @@ public class MapFragmentActivity extends AppCompatActivity implements OnMapReady
         currentLocation = findViewById(R.id.currentLocation);
 
         checkPermissions(savedInstanceState);
-
 
 
         searchIcon.setOnClickListener(new View.OnClickListener() {
@@ -197,18 +198,29 @@ public class MapFragmentActivity extends AppCompatActivity implements OnMapReady
                         return;
                     }
                     // get Current location update continuously and app in background also
-                    locationCallBack=new LocationCallback() {
+                    locationCallBack = new LocationCallback() {
                         @Override
                         public void onLocationResult(@NonNull LocationResult locationResult) {
                             super.onLocationResult(locationResult);
-                            if(locationResult==null){
+                            if (locationResult == null) {
                                 return;
                             }
-                            System.out.println("aaaaaaaa " + "Latitude: " + locationResult.getLastLocation().getLatitude() + " Longitude: " + locationResult.getLastLocation().getLongitude());
+
+                            runOnUiThread(new Runnable() {
+                                @Override
+                                public void run() {
+                                    markOnMap(locationResult.getLastLocation().getLatitude(), locationResult.getLastLocation().getLongitude(), 15);
+                                    //Log.d("aaaaaaa1",locationResult.getLastLocation().getLatitude() + " Longitude: " + locationResult.getLastLocation().getLongitude());
+                                    //  System.out.println("aaaaaaaa2 " + "Latitude: " + locationResult.getLastLocation().getLatitude() + " Longitude: " + locationResult.getLastLocation().getLongitude());
+                                }
+                            });
+
                         }
                     };
 
-                    fusedLocationProviderClient.requestLocationUpdates(locationRequest, locationCallBack,Looper.getMainLooper());
+                    handlerThread = new HandlerThread("LocationCallBackThread");
+                    handlerThread.start();
+                    fusedLocationProviderClient.requestLocationUpdates(locationRequest, locationCallBack, handlerThread.getLooper());
 
 
                     // get Current location update only one time
@@ -228,25 +240,31 @@ public class MapFragmentActivity extends AppCompatActivity implements OnMapReady
 
     }
 
+    public void closeBackgroundMethods() {
+        if (fusedLocationProviderClient != null) {
+            fusedLocationProviderClient.removeLocationUpdates(locationCallBack);
+        }
+        if (handlerThread != null) {
+            handlerThread.quit();
+        }
+    }
+
     @Override
     protected void onPause() {
         super.onPause();
-        if (fusedLocationProviderClient != null) {
-            if (ActivityCompat.checkSelfPermission(this, Manifest.permission.ACCESS_FINE_LOCATION) != PackageManager.PERMISSION_GRANTED && ActivityCompat.checkSelfPermission(this, Manifest.permission.ACCESS_COARSE_LOCATION) != PackageManager.PERMISSION_GRANTED) {
-                return;
-            }
-            fusedLocationProviderClient.removeLocationUpdates(locationCallBack);
-        }
+        closeBackgroundMethods();
     }
+
     @Override
     protected void onStop() {
         super.onStop();
-        if (fusedLocationProviderClient != null) {
-            if (ActivityCompat.checkSelfPermission(this, Manifest.permission.ACCESS_FINE_LOCATION) != PackageManager.PERMISSION_GRANTED && ActivityCompat.checkSelfPermission(this, Manifest.permission.ACCESS_COARSE_LOCATION) != PackageManager.PERMISSION_GRANTED) {
-                return;
-            }
-            fusedLocationProviderClient.removeLocationUpdates(locationCallBack);
-        }
+        closeBackgroundMethods();
+    }
+
+    @Override
+    protected void onDestroy() {
+        super.onDestroy();
+        closeBackgroundMethods();
     }
 
     public void markOnMap(double latitude, double longitude, float zoomLevel) {
