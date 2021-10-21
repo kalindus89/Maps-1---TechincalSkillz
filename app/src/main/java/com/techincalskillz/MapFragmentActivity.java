@@ -73,6 +73,8 @@ public class MapFragmentActivity extends AppCompatActivity implements OnMapReady
     FusedLocationProviderClient fusedLocationProviderClient;
     boolean currentLocationUpdate = false;
 
+    LocationCallback locationCallBack;
+
     @Override
     protected void onCreate(Bundle savedInstanceState) {
         super.onCreate(savedInstanceState);
@@ -86,6 +88,7 @@ public class MapFragmentActivity extends AppCompatActivity implements OnMapReady
         currentLocation = findViewById(R.id.currentLocation);
 
         checkPermissions(savedInstanceState);
+
 
 
         searchIcon.setOnClickListener(new View.OnClickListener() {
@@ -194,16 +197,19 @@ public class MapFragmentActivity extends AppCompatActivity implements OnMapReady
                         return;
                     }
                     // get Current location update continuously and app in background also
-                    fusedLocationProviderClient.requestLocationUpdates(locationRequest, new LocationCallback() {
+                    locationCallBack=new LocationCallback() {
                         @Override
                         public void onLocationResult(@NonNull LocationResult locationResult) {
                             super.onLocationResult(locationResult);
-
-                            //  Toast.makeText(MapFragmentActivity.this, "Latitude: "+locationResult.getLastLocation().getLatitude()+" Longitude: "+locationResult.getLastLocation().getLongitude(), Toast.LENGTH_SHORT).show();
-
+                            if(locationResult==null){
+                                return;
+                            }
                             System.out.println("aaaaaaaa " + "Latitude: " + locationResult.getLastLocation().getLatitude() + " Longitude: " + locationResult.getLastLocation().getLongitude());
                         }
-                    }, Looper.getMainLooper());
+                    };
+
+                    fusedLocationProviderClient.requestLocationUpdates(locationRequest, locationCallBack,Looper.getMainLooper());
+
 
                     // get Current location update only one time
                     /*fusedLocationProviderClient.getLastLocation().addOnSuccessListener(new OnSuccessListener<Location>() {
@@ -229,12 +235,7 @@ public class MapFragmentActivity extends AppCompatActivity implements OnMapReady
             if (ActivityCompat.checkSelfPermission(this, Manifest.permission.ACCESS_FINE_LOCATION) != PackageManager.PERMISSION_GRANTED && ActivityCompat.checkSelfPermission(this, Manifest.permission.ACCESS_COARSE_LOCATION) != PackageManager.PERMISSION_GRANTED) {
                 return;
             }
-            fusedLocationProviderClient.requestLocationUpdates(locationRequest, new LocationCallback() {
-                @Override
-                public void onLocationResult(@NonNull LocationResult locationResult) {
-                    super.onLocationResult(locationResult);
-                }
-            }, Looper.getMainLooper());
+            fusedLocationProviderClient.removeLocationUpdates(locationCallBack);
         }
     }
     @Override
@@ -244,12 +245,7 @@ public class MapFragmentActivity extends AppCompatActivity implements OnMapReady
             if (ActivityCompat.checkSelfPermission(this, Manifest.permission.ACCESS_FINE_LOCATION) != PackageManager.PERMISSION_GRANTED && ActivityCompat.checkSelfPermission(this, Manifest.permission.ACCESS_COARSE_LOCATION) != PackageManager.PERMISSION_GRANTED) {
                 return;
             }
-            fusedLocationProviderClient.requestLocationUpdates(locationRequest, new LocationCallback() {
-                @Override
-                public void onLocationResult(@NonNull LocationResult locationResult) {
-                    super.onLocationResult(locationResult);
-                }
-            }, Looper.getMainLooper());
+            fusedLocationProviderClient.removeLocationUpdates(locationCallBack);
         }
     }
 
