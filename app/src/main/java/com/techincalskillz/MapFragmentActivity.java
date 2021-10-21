@@ -70,7 +70,7 @@ public class MapFragmentActivity extends AppCompatActivity implements OnMapReady
     GoogleMap googleMap;
     EditText searchText;
     ImageView searchIcon;
-    LinearLayout getLocationName, moveAnimationCam, stickMap, currentLocation;
+    LinearLayout getLocationName, moveAnimationCam, stickMap, currentLocation,notiLocation;
     LocationRequest locationRequest;
     FusedLocationProviderClient fusedLocationProviderClient;
     boolean currentLocationUpdate = false;
@@ -88,6 +88,7 @@ public class MapFragmentActivity extends AppCompatActivity implements OnMapReady
         moveAnimationCam = findViewById(R.id.moveAnimationCam);
         stickMap = findViewById(R.id.stickMap);
         currentLocation = findViewById(R.id.currentLocation);
+        notiLocation = findViewById(R.id.notiLocation);
 
         checkPermissions(savedInstanceState);
 
@@ -237,6 +238,17 @@ public class MapFragmentActivity extends AppCompatActivity implements OnMapReady
             }
 
         });
+
+        notiLocation.setOnClickListener(new View.OnClickListener() {
+            @Override
+            public void onClick(View view) {
+
+                Intent intent = new Intent(MapFragmentActivity.this,BatchLocationActivity.class);
+                startActivity(intent);
+
+            }
+        });
+
 
     }
 
