@@ -3,10 +3,13 @@ package com.techincalskillz;
 import androidx.annotation.NonNull;
 import androidx.appcompat.app.AppCompatActivity;
 import androidx.core.app.ActivityCompat;
+import androidx.core.content.ContextCompat;
 
 import android.Manifest;
+import android.content.Intent;
 import android.content.SharedPreferences;
 import android.content.pm.PackageManager;
+import android.icu.number.CompactNotation;
 import android.location.Address;
 import android.location.Geocoder;
 import android.location.Location;
@@ -30,7 +33,7 @@ import java.util.Locale;
 
 public class BatchLocationActivity extends AppCompatActivity implements SharedPreferences.OnSharedPreferenceChangeListener {
 
-    LinearLayout requestLocations;
+    LinearLayout requestLocations,mStartService,mStopService;
     TextView outputText;
     LocationRequest locationRequest;
     FusedLocationProviderClient fusedLocationProviderClient;
@@ -42,8 +45,9 @@ public class BatchLocationActivity extends AppCompatActivity implements SharedPr
         setContentView(R.layout.activity_batch_location);
 
         requestLocations = findViewById(R.id.requestLocations);
+        mStartService = findViewById(R.id.mStartService);
+        mStopService = findViewById(R.id.mStopService);
         outputText = findViewById(R.id.outputText);
-
 
         fusedLocationProviderClient = LocationServices.getFusedLocationProviderClient(BatchLocationActivity.this);
 
@@ -64,7 +68,7 @@ public class BatchLocationActivity extends AppCompatActivity implements SharedPr
 
                 outputText.setText(locationResultHelper.getLocationResultText());
                 //  Log.d("aaaaaaa1",locationResult.getLastLocation().getLatitude() + " Longitude: " + locationResult.getLastLocation().getLongitude());
-                  Log.d("aaaaaaa list size ", String.valueOf(locations.size()));
+               //   Log.d("aaaaaaa list size ", String.valueOf(locations.size()));
 
 
             }
@@ -77,6 +81,28 @@ public class BatchLocationActivity extends AppCompatActivity implements SharedPr
                 // used to get multiple(batch) locations in time intervals
                 requestBatchLocationUpdate();
 
+            }
+        });
+
+        mStartService.setOnClickListener(new View.OnClickListener() {
+            @Override
+            public void onClick(View view) {
+
+                // Receive Location Updates in Background Service When app is not Running
+
+                Intent intent = new Intent(BatchLocationActivity.this,MyBackgroundLocationService.class);
+                ContextCompat.startForegroundService(BatchLocationActivity.this,intent);
+                Toast.makeText(BatchLocationActivity.this, "Service Started", Toast.LENGTH_SHORT).show();
+            }
+        });
+
+        mStopService.setOnClickListener(new View.OnClickListener() {
+            @Override
+            public void onClick(View view) {
+
+                Intent intent = new Intent(BatchLocationActivity.this,MyBackgroundLocationService.class);
+                stopService(intent);
+                Toast.makeText(BatchLocationActivity.this, "Service Stopped", Toast.LENGTH_SHORT).show();
             }
         });
 

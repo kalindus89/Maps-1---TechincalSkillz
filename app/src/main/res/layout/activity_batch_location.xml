@@ -48,6 +48,54 @@
                     android:text="Request Locations"/>
             </LinearLayout>
 
+            <LinearLayout
+                android:id="@+id/mStartService"
+                android:layout_width="wrap_content"
+                android:layout_height="wrap_content"
+                android:layout_gravity="center"
+                android:layout_margin="5dp"
+                android:background="@drawable/search_edt"
+                android:elevation="3dp"
+                android:orientation="vertical">
+
+                <ImageView
+                    android:layout_width="35dp"
+                    android:layout_height="35dp"
+                    android:layout_gravity="center"
+                    app:srcCompat="@drawable/ic_baseline_play_circle_outline_24"
+                    app:tint="#F42E8B"/>
+                <TextView
+                    android:layout_width="wrap_content"
+                    android:layout_height="wrap_content"
+                    android:textSize="11dp"
+                    android:layout_margin="5dp"
+                    android:text="Start Service"/>
+            </LinearLayout>
+
+            <LinearLayout
+                android:id="@+id/mStopService"
+                android:layout_width="wrap_content"
+                android:layout_height="wrap_content"
+                android:layout_gravity="center"
+                android:layout_margin="5dp"
+                android:background="@drawable/search_edt"
+                android:elevation="3dp"
+                android:orientation="vertical">
+
+                <ImageView
+                    android:layout_width="35dp"
+                    android:layout_height="35dp"
+                    android:layout_gravity="center"
+                    app:srcCompat="@drawable/ic_baseline_stop_circle_24"
+                    app:tint="#F42E8B"/>
+                <TextView
+                    android:layout_width="wrap_content"
+                    android:layout_height="wrap_content"
+                    android:textSize="11dp"
+                    android:layout_margin="5dp"
+                    android:text="Stop Service"/>
+            </LinearLayout>
+
         </LinearLayout>
 
     </LinearLayout>
