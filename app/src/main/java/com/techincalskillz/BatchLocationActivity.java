@@ -5,10 +5,13 @@ import androidx.appcompat.app.AppCompatActivity;
 import androidx.core.app.ActivityCompat;
 
 import android.Manifest;
+import android.content.SharedPreferences;
 import android.content.pm.PackageManager;
 import android.location.Address;
 import android.location.Geocoder;
+import android.location.Location;
 import android.os.Bundle;
+import android.preference.PreferenceManager;
 import android.util.Log;
 import android.view.View;
 import android.widget.LinearLayout;
@@ -25,7 +28,7 @@ import java.io.IOException;
 import java.util.List;
 import java.util.Locale;
 
-public class BatchLocationActivity extends AppCompatActivity {
+public class BatchLocationActivity extends AppCompatActivity implements SharedPreferences.OnSharedPreferenceChangeListener {
 
     LinearLayout requestLocations;
     TextView outputText;
@@ -52,8 +55,16 @@ public class BatchLocationActivity extends AppCompatActivity {
                     return;
                 }
 
-                outputText.setText(locationResult.getLastLocation().getLatitude() + " Longitude: " + locationResult.getLastLocation().getLongitude());
-                //   Log.d("aaaaaaa1",locationResult.getLastLocation().getLatitude() + " Longitude: " + locationResult.getLastLocation().getLongitude());
+                List<Location> locations=locationResult.getLocations(); //  get set of locations in given time period(here 15 seconds. check below method) and set to list
+                LocationResultHelper locationResultHelper = new LocationResultHelper(BatchLocationActivity.this,locations);
+                locationResultHelper.showNotification();
+                locationResultHelper.saveLastLocationResults();
+
+
+
+                outputText.setText(locationResultHelper.getLocationResultText());
+                //  Log.d("aaaaaaa1",locationResult.getLastLocation().getLatitude() + " Longitude: " + locationResult.getLastLocation().getLongitude());
+                  Log.d("aaaaaaa list size ", String.valueOf(locations.size()));
 
 
             }
@@ -86,5 +97,53 @@ public class BatchLocationActivity extends AppCompatActivity {
         }
         fusedLocationProviderClient.requestLocationUpdates(locationRequest, locationCallBack, null);
 
+    }
+
+
+    public void closeBackgroundMethods() {
+        if (fusedLocationProviderClient != null) {
+            fusedLocationProviderClient.removeLocationUpdates(locationCallBack);
+        }
+    }
+
+    @Override
+    protected void onPause() {
+        super.onPause();
+       // closeBackgroundMethods();
+    }
+
+    @Override
+    protected void onDestroy() {
+        super.onDestroy();
+       //   closeBackgroundMethods();
+    }
+
+    @Override
+    protected void onResume() {
+        super.onResume();
+        outputText.setText(LocationResultHelper.getLastSavedLocationResults(this));
+    }
+
+    @Override
+    protected void onStop() {
+        super.onStop();
+        // closeBackgroundMethods();
+
+        PreferenceManager.getDefaultSharedPreferences(this).unregisterOnSharedPreferenceChangeListener(this);
+    }
+
+    @Override
+    protected void onStart() {
+        super.onStart();
+        PreferenceManager.getDefaultSharedPreferences(this).registerOnSharedPreferenceChangeListener(this); // start below method
+
+    }
+
+    @Override
+    public void onSharedPreferenceChanged(SharedPreferences sharedPreferences, String key) {
+        if(key.equals(LocationResultHelper.KEY_LOCATION_RESULTS)){
+            outputText.setText(LocationResultHelper.getLastSavedLocationResults(this));
+
+        }
     }
 }
