@@ -20,12 +20,15 @@ import android.os.HandlerThread;
 import android.os.Looper;
 import android.provider.Settings;
 import android.util.Log;
+import android.view.KeyEvent;
 import android.view.Menu;
 import android.view.MenuItem;
 import android.view.View;
+import android.view.inputmethod.EditorInfo;
 import android.widget.EditText;
 import android.widget.ImageView;
 import android.widget.LinearLayout;
+import android.widget.TextView;
 import android.widget.Toast;
 
 import com.google.android.gms.common.ConnectionResult;
@@ -70,7 +73,7 @@ public class MapFragmentActivity extends AppCompatActivity implements OnMapReady
     GoogleMap googleMap;
     EditText searchText;
     ImageView searchIcon;
-    LinearLayout getLocationName, moveAnimationCam, stickMap, currentLocation,notiLocation;
+    LinearLayout getLocationName, moveAnimationCam, stickMap, currentLocation, notiLocation;
     LocationRequest locationRequest;
     FusedLocationProviderClient fusedLocationProviderClient;
     boolean currentLocationUpdate = false;
@@ -93,29 +96,24 @@ public class MapFragmentActivity extends AppCompatActivity implements OnMapReady
         checkPermissions(savedInstanceState);
 
 
+        searchText.setOnEditorActionListener(new TextView.OnEditorActionListener() {
+            @Override
+            public boolean onEditorAction(TextView textView, int actionId, KeyEvent keyEvent) {
+
+                if (actionId == EditorInfo.IME_ACTION_SEARCH || actionId == EditorInfo.IME_ACTION_DONE
+                        || keyEvent.getAction() == KeyEvent.ACTION_DOWN  || keyEvent.getAction() == KeyEvent.KEYCODE_ENTER) {
+
+                    setGetLocation();
+                }
+                return false;
+            }
+        });
+
         searchIcon.setOnClickListener(new View.OnClickListener() {
             @Override
             public void onClick(View view) {
 
-                String locationEnter = searchText.getText().toString();
-                if (locationEnter == null) {
-                    Toast.makeText(MapFragmentActivity.this, "Type location name", Toast.LENGTH_SHORT).show();
-                } else {
-
-                    Geocoder geocoder = new Geocoder(MapFragmentActivity.this, Locale.getDefault());
-                    try {
-                        List<Address> addressList = geocoder.getFromLocationName(locationEnter, 1); // get only one results. you can add more
-
-                        if (addressList.size() > 0) {
-
-                            // lati and longi value of first results in addressList
-                            markOnMap(addressList.get(0).getLatitude(), addressList.get(0).getLongitude(), 12);
-
-                        }
-                    } catch (IOException e) {
-                        e.printStackTrace();
-                    }
-                }
+                setGetLocation();
 
             }
         });
@@ -231,7 +229,22 @@ public class MapFragmentActivity extends AppCompatActivity implements OnMapReady
                             Toast.makeText(MapFragmentActivity.this, "Latitude1: " + location.getLatitude() + " Longitude1: " + location.getLongitude(), Toast.LENGTH_SHORT).show();
                             markOnMap(location.getLatitude(),location.getLongitude(),15);
                         }
-                    });*/
+                    });
+
+                    or
+
+                    fusedLocationProviderClient.getLastLocation().addOnCompleteListener(new OnCompleteListener<Location>() {
+                        @Override
+                        public void onComplete(@NonNull Task<Location> task) {
+
+                            Location location = (Location) task.getResult();
+                            Toast.makeText(MapFragmentActivity.this, "Latitude1: " + location.getLatitude() + " Longitude1: " + location.getLongitude(), Toast.LENGTH_SHORT).show();
+                            markOnMap(location.getLatitude(),location.getLongitude(),15);
+
+                        }
+                    });
+
+                    */
 
 
                 }
@@ -243,13 +256,36 @@ public class MapFragmentActivity extends AppCompatActivity implements OnMapReady
             @Override
             public void onClick(View view) {
 
-                Intent intent = new Intent(MapFragmentActivity.this,BatchLocationActivity.class);
+                Intent intent = new Intent(MapFragmentActivity.this, BatchLocationActivity.class);
                 startActivity(intent);
 
             }
         });
 
 
+    }
+
+    private void setGetLocation() {
+        String locationEnter = searchText.getText().toString();
+        if (locationEnter == null) {
+            Toast.makeText(MapFragmentActivity.this, "Type location name", Toast.LENGTH_SHORT).show();
+        } else {
+
+            Geocoder geocoder = new Geocoder(MapFragmentActivity.this, Locale.getDefault());
+            try {
+                List<Address> addressList = geocoder.getFromLocationName(locationEnter, 1); // get only one results. you can add more
+
+                if (addressList.size() > 0) {
+
+                    // lati and longi value of first results in addressList
+                   // addressList.get(0).getCountryName() ,  addressList.get(0).getLocality()
+                    markOnMap(addressList.get(0).getLatitude(), addressList.get(0).getLongitude(), 12);
+
+                }
+            } catch (IOException e) {
+                e.printStackTrace();
+            }
+        }
     }
 
     public void closeBackgroundMethods() {
