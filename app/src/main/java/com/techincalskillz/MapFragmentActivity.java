@@ -24,6 +24,7 @@ import android.view.KeyEvent;
 import android.view.Menu;
 import android.view.MenuItem;
 import android.view.View;
+import android.view.WindowManager;
 import android.view.inputmethod.EditorInfo;
 import android.widget.EditText;
 import android.widget.ImageView;
@@ -102,7 +103,7 @@ public class MapFragmentActivity extends AppCompatActivity implements OnMapReady
 
                 if (actionId == EditorInfo.IME_ACTION_SEARCH || actionId == EditorInfo.IME_ACTION_DONE
                         || keyEvent.getAction() == KeyEvent.ACTION_DOWN  || keyEvent.getAction() == KeyEvent.KEYCODE_ENTER) {
-
+                    hideSoftKeyboard();
                     setGetLocation();
                 }
                 return false;
@@ -112,7 +113,7 @@ public class MapFragmentActivity extends AppCompatActivity implements OnMapReady
         searchIcon.setOnClickListener(new View.OnClickListener() {
             @Override
             public void onClick(View view) {
-
+                hideSoftKeyboard();
                 setGetLocation();
 
             }
@@ -278,7 +279,7 @@ public class MapFragmentActivity extends AppCompatActivity implements OnMapReady
                 if (addressList.size() > 0) {
 
                     // lati and longi value of first results in addressList
-                   // addressList.get(0).getCountryName() ,  addressList.get(0).getLocality()
+                 //  addressList.get(0).getAddressLine(0) , addressList.get(0).getCountryName() ,  addressList.get(0).getLocality()
                     markOnMap(addressList.get(0).getLatitude(), addressList.get(0).getLongitude(), 12);
 
                 }
@@ -286,6 +287,11 @@ public class MapFragmentActivity extends AppCompatActivity implements OnMapReady
                 e.printStackTrace();
             }
         }
+    }
+
+    private void hideSoftKeyboard(){
+        this.getWindow().setSoftInputMode(WindowManager.LayoutParams.SOFT_INPUT_STATE_ALWAYS_HIDDEN);
+
     }
 
     public void closeBackgroundMethods() {
