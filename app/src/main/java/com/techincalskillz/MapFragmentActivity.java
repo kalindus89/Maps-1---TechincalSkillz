@@ -1,5 +1,9 @@
 package com.techincalskillz;
 
+import androidx.activity.result.ActivityResult;
+import androidx.activity.result.ActivityResultCallback;
+import androidx.activity.result.ActivityResultLauncher;
+import androidx.activity.result.contract.ActivityResultContracts;
 import androidx.annotation.NonNull;
 import androidx.annotation.Nullable;
 import androidx.appcompat.app.AppCompatActivity;
@@ -13,11 +17,9 @@ import android.content.IntentSender;
 import android.content.pm.PackageManager;
 import android.location.Address;
 import android.location.Geocoder;
-import android.location.Location;
 import android.net.Uri;
 import android.os.Bundle;
 import android.os.HandlerThread;
-import android.os.Looper;
 import android.provider.Settings;
 import android.util.Log;
 import android.view.KeyEvent;
@@ -51,22 +53,32 @@ import com.google.android.gms.maps.MapFragment;
 import com.google.android.gms.maps.OnMapReadyCallback;
 import com.google.android.gms.maps.model.LatLng;
 import com.google.android.gms.maps.model.LatLngBounds;
-import com.google.android.gms.maps.model.Marker;
 import com.google.android.gms.maps.model.MarkerOptions;
 import com.google.android.gms.tasks.OnCompleteListener;
-import com.google.android.gms.tasks.OnFailureListener;
-import com.google.android.gms.tasks.OnSuccessListener;
 import com.google.android.gms.tasks.Task;
+import com.google.android.libraries.places.api.Places;
+import com.google.android.libraries.places.api.model.Place;
+import com.google.android.libraries.places.widget.Autocomplete;
+import com.google.android.libraries.places.widget.model.AutocompleteActivityMode;
 import com.karumi.dexter.Dexter;
 import com.karumi.dexter.PermissionToken;
 import com.karumi.dexter.listener.PermissionDeniedResponse;
 import com.karumi.dexter.listener.PermissionGrantedResponse;
 import com.karumi.dexter.listener.PermissionRequest;
 import com.karumi.dexter.listener.single.PermissionListener;
+import com.techincalskillz.retrofit_singleton_pattern.AutoCompleteApiInterface;
+import com.techincalskillz.retrofit_singleton_pattern.Credentials;
+import com.techincalskillz.retrofit_singleton_pattern.response.AutoCompleteResponse;
+import com.techincalskillz.retrofit_singleton_pattern.ServiceClass;
 
 import java.io.IOException;
+import java.util.Arrays;
 import java.util.List;
 import java.util.Locale;
+
+import retrofit2.Call;
+import retrofit2.Callback;
+import retrofit2.Response;
 
 public class MapFragmentActivity extends AppCompatActivity implements OnMapReadyCallback {
 
@@ -81,6 +93,33 @@ public class MapFragmentActivity extends AppCompatActivity implements OnMapReady
     HandlerThread handlerThread;
     LocationCallback locationCallBack;
 
+
+    @Override
+    protected void onActivityResult(int requestCode, int resultCode, @Nullable Intent data) {
+        super.onActivityResult(requestCode, resultCode, data);
+
+        if (requestCode == 101) {
+            if (resultCode == RESULT_OK) {
+                Toast.makeText(MapFragmentActivity.this, "Now Gps is Ok", Toast.LENGTH_SHORT).show();
+            }
+            if (resultCode == RESULT_CANCELED) {
+                Toast.makeText(MapFragmentActivity.this, "Denied GPS enable", Toast.LENGTH_SHORT).show();
+            }
+        }
+    }
+    ActivityResultLauncher<Intent> mLauncher = registerForActivityResult(
+            new ActivityResultContracts.StartActivityForResult(),
+            new ActivityResultCallback<ActivityResult>() {
+                @Override
+                public void onActivityResult(ActivityResult result) {
+                    // Do your code from onActivityResult
+
+                    System.out.println("aaaaaaa "+result.getResultCode());
+                    Place place=Autocomplete.getPlaceFromIntent(result.getData());
+                    searchText.setText(place.getAddress());
+                    markOnMap(place.getLatLng().latitude, place.getLatLng().longitude, 15);
+                }
+            });
     @Override
     protected void onCreate(Bundle savedInstanceState) {
         super.onCreate(savedInstanceState);
@@ -94,8 +133,28 @@ public class MapFragmentActivity extends AppCompatActivity implements OnMapReady
         currentLocation = findViewById(R.id.currentLocation);
         notiLocation = findViewById(R.id.notiLocation);
 
+
         checkPermissions(savedInstanceState);
 
+        if (!Places.isInitialized()) {
+            Places.initialize(getApplicationContext(), getString(R.string.google_geo_api_key), Locale.US);
+        }
+
+        // for place autocomplete
+        searchText.setFocusable(false);
+        searchText.setOnClickListener(new View.OnClickListener() {
+            @Override
+            public void onClick(View view) {
+
+                List<Place.Field> fieldList= Arrays.asList(Place.Field.ADDRESS,Place.Field.LAT_LNG, Place.Field.NAME);
+
+                Intent intent = new Autocomplete.IntentBuilder(AutocompleteActivityMode.OVERLAY,fieldList).build(MapFragmentActivity.this);
+
+                mLauncher.launch(intent);
+
+
+            }
+        });
 
         searchText.setOnEditorActionListener(new TextView.OnEditorActionListener() {
             @Override
@@ -257,13 +316,54 @@ public class MapFragmentActivity extends AppCompatActivity implements OnMapReady
             @Override
             public void onClick(View view) {
 
-                Intent intent = new Intent(MapFragmentActivity.this, BatchLocationActivity.class);
-                startActivity(intent);
+               /* Intent intent = new Intent(MapFragmentActivity.this, BatchLocationActivity.class);
+                startActivity(intent);*/
+                getAutocompleteResults();
 
             }
         });
 
 
+    }
+
+    private void getAutocompleteResults() {
+
+        AutoCompleteApiInterface movieApiInterface = ServiceClass.getAutoCompleteApiInterface();
+
+        movieApiInterface.getAutoCompleteResponse("horana",Credentials.API_KEY).enqueue(new Callback<AutoCompleteResponse>() {
+            @Override
+            public void onResponse(Call<AutoCompleteResponse> call, Response<AutoCompleteResponse> response) {
+
+                if (response.isSuccessful()) {
+                    /*if (response.body().getResults().size() > 6) {
+                        for (int i = 0; i < 6; i++) {
+                            movieModelList.add(response.body().getResults().get(i));
+                        }
+                    } else {
+                        movieModelList.addAll(response.body().getResults());
+                    }
+                    pagerAdapterBanners.notifyDataSetChanged();
+                    mainRecyclerAdapter.notifyDataSetChanged();*/
+                    System.out.println("aaaaaaaaaaaaaaa1 "+response.body().getPredictions().size()
+                            +" "+response.body().getPredictions().get(1).getDescription()+" "+response.body().getStatus());
+
+                } else {
+
+                    try {
+                        Log.v("aaaaaaaaaaaaaaa2", response.errorBody().toString());
+                    } catch (Exception e) {
+                        e.printStackTrace();
+                    }
+
+                }
+
+            }
+
+            @Override
+            public void onFailure(Call<AutoCompleteResponse> call, Throwable t) {
+
+            }
+        });
     }
 
     private void setGetLocation() {
@@ -440,19 +540,6 @@ public class MapFragmentActivity extends AppCompatActivity implements OnMapReady
     }
 
 
-    @Override
-    protected void onActivityResult(int requestCode, int resultCode, @Nullable Intent data) {
-        super.onActivityResult(requestCode, resultCode, data);
-
-        if (requestCode == 101) {
-            if (resultCode == RESULT_OK) {
-                Toast.makeText(MapFragmentActivity.this, "Now Gps is Ok", Toast.LENGTH_SHORT).show();
-            }
-            if (resultCode == RESULT_CANCELED) {
-                Toast.makeText(MapFragmentActivity.this, "Denied GPS enable", Toast.LENGTH_SHORT).show();
-            }
-        }
-    }
 
     public void checkPermissions(Bundle savedInstanceState) {
         Dexter.withContext(this).withPermission(Manifest.permission.ACCESS_FINE_LOCATION).withListener(new PermissionListener() {
