@@ -8,9 +8,12 @@ import androidx.annotation.NonNull;
 import androidx.annotation.Nullable;
 import androidx.appcompat.app.AppCompatActivity;
 import androidx.core.app.ActivityCompat;
+import androidx.recyclerview.widget.LinearLayoutManager;
+import androidx.recyclerview.widget.RecyclerView;
 
 import android.Manifest;
 import android.app.Dialog;
+import android.content.Context;
 import android.content.DialogInterface;
 import android.content.Intent;
 import android.content.IntentSender;
@@ -21,6 +24,8 @@ import android.net.Uri;
 import android.os.Bundle;
 import android.os.HandlerThread;
 import android.provider.Settings;
+import android.text.Editable;
+import android.text.TextWatcher;
 import android.util.Log;
 import android.view.KeyEvent;
 import android.view.Menu;
@@ -28,9 +33,11 @@ import android.view.MenuItem;
 import android.view.View;
 import android.view.WindowManager;
 import android.view.inputmethod.EditorInfo;
+import android.view.inputmethod.InputMethodManager;
 import android.widget.EditText;
 import android.widget.ImageView;
 import android.widget.LinearLayout;
+import android.widget.RelativeLayout;
 import android.widget.TextView;
 import android.widget.Toast;
 
@@ -68,6 +75,8 @@ import com.karumi.dexter.listener.PermissionRequest;
 import com.karumi.dexter.listener.single.PermissionListener;
 import com.techincalskillz.retrofit_singleton_pattern.AutoCompleteApiInterface;
 import com.techincalskillz.retrofit_singleton_pattern.Credentials;
+import com.techincalskillz.retrofit_singleton_pattern.Model.PredictionArrayModel;
+import com.techincalskillz.retrofit_singleton_pattern.adapters.RecyclerAdapterAutoComplete;
 import com.techincalskillz.retrofit_singleton_pattern.response.AutoCompleteResponse;
 import com.techincalskillz.retrofit_singleton_pattern.ServiceClass;
 
@@ -80,7 +89,7 @@ import retrofit2.Call;
 import retrofit2.Callback;
 import retrofit2.Response;
 
-public class MapFragmentActivity extends AppCompatActivity implements OnMapReadyCallback {
+public class MapFragmentActivity extends AppCompatActivity implements OnMapReadyCallback, View.OnClickListener {
 
 
     GoogleMap googleMap;
@@ -92,7 +101,11 @@ public class MapFragmentActivity extends AppCompatActivity implements OnMapReady
     boolean currentLocationUpdate = false;
     HandlerThread handlerThread;
     LocationCallback locationCallBack;
-
+    RecyclerView recyclerView;
+    RelativeLayout autoCompletePlaces;
+    TextView empty_msg;
+    RecyclerAdapterAutoComplete mainRecyclerAdapter;
+    boolean keywordSearch = true;
 
     @Override
     protected void onActivityResult(int requestCode, int resultCode, @Nullable Intent data) {
@@ -107,182 +120,213 @@ public class MapFragmentActivity extends AppCompatActivity implements OnMapReady
             }
         }
     }
-    ActivityResultLauncher<Intent> mLauncher = registerForActivityResult(
-            new ActivityResultContracts.StartActivityForResult(),
-            new ActivityResultCallback<ActivityResult>() {
-                @Override
-                public void onActivityResult(ActivityResult result) {
-                    // Do your code from onActivityResult
 
-                    System.out.println("aaaaaaa "+result.getResultCode());
-                    Place place=Autocomplete.getPlaceFromIntent(result.getData());
-                    searchText.setText(place.getAddress());
-                    markOnMap(place.getLatLng().latitude, place.getLatLng().longitude, 15);
-                }
-            });
     @Override
     protected void onCreate(Bundle savedInstanceState) {
         super.onCreate(savedInstanceState);
         setContentView(R.layout.activity_map_fragment);
 
         searchText = findViewById(R.id.searchText);
+        recyclerView = findViewById(R.id.recyclerView);
+        autoCompletePlaces = findViewById(R.id.autoCompletePlaces);
+        empty_msg = findViewById(R.id.empty_msg);
+
         searchIcon = findViewById(R.id.searchIcon);
+        searchIcon.setOnClickListener(this);
+
         getLocationName = findViewById(R.id.getLocationName);
+        getLocationName.setOnClickListener(this);
+
         moveAnimationCam = findViewById(R.id.moveAnimationCam);
+        moveAnimationCam.setOnClickListener(this);
+
         stickMap = findViewById(R.id.stickMap);
+        stickMap.setOnClickListener(this);
+
         currentLocation = findViewById(R.id.currentLocation);
+        currentLocation.setOnClickListener(this);
+
         notiLocation = findViewById(R.id.notiLocation);
+        notiLocation.setOnClickListener(this);
 
 
         checkPermissions(savedInstanceState);
 
-        if (!Places.isInitialized()) {
-            Places.initialize(getApplicationContext(), getString(R.string.google_geo_api_key), Locale.US);
-        }
 
-        // for place autocomplete
-        searchText.setFocusable(false);
-        searchText.setOnClickListener(new View.OnClickListener() {
-            @Override
-            public void onClick(View view) {
-
-                List<Place.Field> fieldList= Arrays.asList(Place.Field.ADDRESS,Place.Field.LAT_LNG, Place.Field.NAME);
-
-                Intent intent = new Autocomplete.IntentBuilder(AutocompleteActivityMode.OVERLAY,fieldList).build(MapFragmentActivity.this);
-
-                mLauncher.launch(intent);
-
-
-            }
-        });
-
-        searchText.setOnEditorActionListener(new TextView.OnEditorActionListener() {
+    /*    searchText.setOnEditorActionListener(new TextView.OnEditorActionListener() {
             @Override
             public boolean onEditorAction(TextView textView, int actionId, KeyEvent keyEvent) {
 
                 if (actionId == EditorInfo.IME_ACTION_SEARCH || actionId == EditorInfo.IME_ACTION_DONE
-                        || keyEvent.getAction() == KeyEvent.ACTION_DOWN  || keyEvent.getAction() == KeyEvent.KEYCODE_ENTER) {
+                        || keyEvent.getAction() == KeyEvent.ACTION_DOWN || keyEvent.getAction() == KeyEvent.KEYCODE_ENTER) {
                     hideSoftKeyboard();
                     setGetLocation();
                 }
                 return false;
             }
-        });
+        });*/
 
-        searchIcon.setOnClickListener(new View.OnClickListener() {
+        searchText.setOnClickListener(new View.OnClickListener() {
             @Override
             public void onClick(View view) {
-                hideSoftKeyboard();
-                setGetLocation();
+                keywordSearch = true;
+            }
+        });
 
+        searchText.addTextChangedListener(new TextWatcher() {
+            @Override
+            public void beforeTextChanged(CharSequence charSequence, int i, int i1, int i2) {
+
+            }
+
+            @Override
+            public void onTextChanged(CharSequence charSequence, int i, int i1, int i2) {
+
+            }
+
+            @Override
+            public void afterTextChanged(Editable editable) {
+                getAutocompleteResults(editable.toString());
             }
         });
 
 
-        getLocationName.setOnClickListener(new View.OnClickListener() {
-            @Override
-            public void onClick(View view) {
+    }
+
+    private void getAutocompleteResults(String text) {
+
+        if (keywordSearch == true) {
+
+            AutoCompleteApiInterface movieApiInterface = ServiceClass.getAutoCompleteApiInterface();
+
+            movieApiInterface.getAutoCompleteResponse(text, Credentials.API_KEY).enqueue(new Callback<AutoCompleteResponse>() {
+                @Override
+                public void onResponse(Call<AutoCompleteResponse> call, Response<AutoCompleteResponse> response) {
+
+                    if (response.isSuccessful()) {
+                        recyclerView.setVisibility(View.VISIBLE);
+                        empty_msg.setVisibility(View.GONE);
+
+                        List<PredictionArrayModel> getPredictionsList = response.body().getPredictions();
+
+                        RecyclerView.LayoutManager layoutManager = new LinearLayoutManager(MapFragmentActivity.this, RecyclerView.VERTICAL, false);
+                        recyclerView.setLayoutManager(layoutManager);
+                        mainRecyclerAdapter = new RecyclerAdapterAutoComplete(MapFragmentActivity.this, getPredictionsList);
+                        recyclerView.setAdapter(mainRecyclerAdapter);
+                        mainRecyclerAdapter.notifyDataSetChanged();
 
 
-                //reverse geocoder
-                Geocoder geocoder = new Geocoder(MapFragmentActivity.this, Locale.getDefault());
-                try {
-                    List<Address> addressList = geocoder.getFromLocation(6.8649, 79.8997, 1); // get only one results. you can add more
+                    } else {
+                        try {
+                            recyclerView.setVisibility(View.GONE);
+                            empty_msg.setVisibility(View.VISIBLE);
 
-                    if (addressList.size() > 0) {
-
-
-                        Toast.makeText(MapFragmentActivity.this, "Country " + addressList.get(0).getCountryName() + " city:" + addressList.get(0).getLocality() + " : country code:" + addressList.get(0).getCountryCode(), Toast.LENGTH_SHORT).show();
+                            //  Log.v("aaaaaaaaaaaaaaa2", response.errorBody().toString());
+                        } catch (Exception e) {
+                            e.printStackTrace();
+                        }
 
                     }
-                } catch (IOException e) {
-                    e.printStackTrace();
+
                 }
 
+                @Override
+                public void onFailure(Call<AutoCompleteResponse> call, Throwable t) {
+
+                }
+            });
+        } else {
+
+            recyclerView.setVisibility(View.GONE);
+            empty_msg.setVisibility(View.GONE);
+            hideSoftKeyboard();
+        }
+    }
+
+
+    @Override
+    public void onClick(View view) {
+
+        if (view.getId() == R.id.searchText) {
+            hideSoftKeyboard();
+            setGetLocation();
+        } else if (view.getId() == R.id.notiLocation) {
+
+            Intent intent = new Intent(MapFragmentActivity.this, BatchLocationActivity.class);
+            startActivity(intent);
+        } else if (view.getId() == R.id.moveAnimationCam) {
+            //animation with time
+            markOnMap(6.7230, 80.0647, 15);
+        } else if (view.getId() == R.id.getLocationName) {
+            //reverse geocoder
+            Geocoder geocoder = new Geocoder(MapFragmentActivity.this, Locale.getDefault());
+            try {
+                List<Address> addressList = geocoder.getFromLocation(6.8649, 79.8997, 1); // get only one results. you can add more
+
+                if (addressList.size() > 0) {
+
+
+                    Toast.makeText(MapFragmentActivity.this, "Country " + addressList.get(0).getCountryName() + " city:" + addressList.get(0).getLocality() + " : country code:" + addressList.get(0).getCountryCode(), Toast.LENGTH_SHORT).show();
+
+                }
+            } catch (IOException e) {
+                e.printStackTrace();
             }
-        });
-        moveAnimationCam.setOnClickListener(new View.OnClickListener() {
-            @Override
-            public void onClick(View view) {
+        } else if (view.getId() == R.id.stickMap) {
 
-                /*LatLng latLng = new LatLng(6.7230, 80.0647); // latitude and Longitude
-                MarkerOptions markerOptions = new MarkerOptions();
-                markerOptions.position(latLng);
-                googleMap.addMarker(markerOptions);
-                CameraUpdate cameraUpdate = CameraUpdateFactory.newLatLngZoom(latLng, 12); // max 21. 1world, 5Continents, 10Cities, 15Streets, 20Buildings
-                googleMap.animateCamera(cameraUpdate); // moving to position*/
+            double bottomBoundry = 6.7230 - 0.3;
+            double leftoundry = 80.0647 - 0.3;
+            double topBoundry = 6.7230 + 0.3;
+            double rightBoundry = 80.0647 + 0.3;
 
-                //animation with time
+            LatLngBounds latLngBounds = new LatLngBounds(new LatLng(bottomBoundry, leftoundry), new LatLng(topBoundry, rightBoundry));
 
-                markOnMap(6.7230, 80.0647, 15);
+            //googleMap.animateCamera(CameraUpdateFactory.newLatLngBounds(latLngBounds,1));
+            googleMap.setLatLngBoundsForCameraTarget(latLngBounds);
+            //googleMap.animateCamera(CameraUpdateFactory.newLatLngBounds(latLngBounds,400,400,1));
 
+            MarkerOptions markerOptions = new MarkerOptions();
+            markerOptions.position(latLngBounds.getCenter());//getcenter retruns latlan values
+            googleMap.addMarker(markerOptions);
+        } else if (view.getId() == R.id.currentLocation) {
+            // go to  CheckGps() to change location update time
 
-            }
-        });
-        stickMap.setOnClickListener(new View.OnClickListener() {
-            @Override
-            public void onClick(View view) {
+            if (currentLocationUpdate == true) {
+                fusedLocationProviderClient = LocationServices.getFusedLocationProviderClient(MapFragmentActivity.this);
 
+                if (ActivityCompat.checkSelfPermission(MapFragmentActivity.this, Manifest.permission.ACCESS_FINE_LOCATION)
+                        != PackageManager.PERMISSION_GRANTED && ActivityCompat.checkSelfPermission(MapFragmentActivity.this, Manifest.permission.ACCESS_COARSE_LOCATION)
+                        != PackageManager.PERMISSION_GRANTED) {
 
-                double bottomBoundry = 6.7230 - 0.3;
-                double leftoundry = 80.0647 - 0.3;
-                double topBoundry = 6.7230 + 0.3;
-                double rightBoundry = 80.0647 + 0.3;
-
-                LatLngBounds latLngBounds = new LatLngBounds(new LatLng(bottomBoundry, leftoundry), new LatLng(topBoundry, rightBoundry));
-
-                //googleMap.animateCamera(CameraUpdateFactory.newLatLngBounds(latLngBounds,1));
-                googleMap.setLatLngBoundsForCameraTarget(latLngBounds);
-                //googleMap.animateCamera(CameraUpdateFactory.newLatLngBounds(latLngBounds,400,400,1));
-
-                MarkerOptions markerOptions = new MarkerOptions();
-                markerOptions.position(latLngBounds.getCenter());//getcenter retruns latlan values
-                googleMap.addMarker(markerOptions);
-            }
-        });
-
-        currentLocation.setOnClickListener(new View.OnClickListener() {
-            @Override
-            public void onClick(View view) {
-
-                // go to  CheckGps() to change location update time
-
-                if (currentLocationUpdate == true) {
-                    fusedLocationProviderClient = LocationServices.getFusedLocationProviderClient(MapFragmentActivity.this);
-
-                    if (ActivityCompat.checkSelfPermission(MapFragmentActivity.this, Manifest.permission.ACCESS_FINE_LOCATION)
-                            != PackageManager.PERMISSION_GRANTED && ActivityCompat.checkSelfPermission(MapFragmentActivity.this, Manifest.permission.ACCESS_COARSE_LOCATION)
-                            != PackageManager.PERMISSION_GRANTED) {
-
-                        return;
-                    }
-                    // get Current location update continuously and app in background also
-                    locationCallBack = new LocationCallback() {
-                        @Override
-                        public void onLocationResult(@NonNull LocationResult locationResult) {
-                            super.onLocationResult(locationResult);
-                            if (locationResult == null) {
-                                return;
-                            }
-
-                            runOnUiThread(new Runnable() {
-                                @Override
-                                public void run() {
-                                    markOnMap(locationResult.getLastLocation().getLatitude(), locationResult.getLastLocation().getLongitude(), 15);
-                                    //Log.d("aaaaaaa1",locationResult.getLastLocation().getLatitude() + " Longitude: " + locationResult.getLastLocation().getLongitude());
-                                    //  System.out.println("aaaaaaaa2 " + "Latitude: " + locationResult.getLastLocation().getLatitude() + " Longitude: " + locationResult.getLastLocation().getLongitude());
-                                }
-                            });
-
+                    return;
+                }
+                // get Current location update continuously and app in background also
+                locationCallBack = new LocationCallback() {
+                    @Override
+                    public void onLocationResult(@NonNull LocationResult locationResult) {
+                        super.onLocationResult(locationResult);
+                        if (locationResult == null) {
+                            return;
                         }
-                    };
 
-                    handlerThread = new HandlerThread("LocationCallBackThread");
-                    handlerThread.start();
-                    fusedLocationProviderClient.requestLocationUpdates(locationRequest, locationCallBack, handlerThread.getLooper());
+                        runOnUiThread(new Runnable() {
+                            @Override
+                            public void run() {
+                                markOnMap(locationResult.getLastLocation().getLatitude(), locationResult.getLastLocation().getLongitude(), 15);
+                                //Log.d("aaaaaaa1",locationResult.getLastLocation().getLatitude() + " Longitude: " + locationResult.getLastLocation().getLongitude());
+                                //  System.out.println("aaaaaaaa2 " + "Latitude: " + locationResult.getLastLocation().getLatitude() + " Longitude: " + locationResult.getLastLocation().getLongitude());
+                            }
+                        });
+
+                    }
+                };
+
+                handlerThread = new HandlerThread("LocationCallBackThread");
+                handlerThread.start();
+                fusedLocationProviderClient.requestLocationUpdates(locationRequest, locationCallBack, handlerThread.getLooper());
 
 
-                    // get Current location update only one time
+                // get Current location update only one time
                     /*fusedLocationProviderClient.getLastLocation().addOnSuccessListener(new OnSuccessListener<Location>() {
                         @Override
                         public void onSuccess(Location location) {
@@ -307,64 +351,10 @@ public class MapFragmentActivity extends AppCompatActivity implements OnMapReady
                     */
 
 
-                }
             }
-
-        });
-
-        notiLocation.setOnClickListener(new View.OnClickListener() {
-            @Override
-            public void onClick(View view) {
-
-               /* Intent intent = new Intent(MapFragmentActivity.this, BatchLocationActivity.class);
-                startActivity(intent);*/
-                getAutocompleteResults();
-
-            }
-        });
-
-
+        }
     }
 
-    private void getAutocompleteResults() {
-
-        AutoCompleteApiInterface movieApiInterface = ServiceClass.getAutoCompleteApiInterface();
-
-        movieApiInterface.getAutoCompleteResponse("horana",Credentials.API_KEY).enqueue(new Callback<AutoCompleteResponse>() {
-            @Override
-            public void onResponse(Call<AutoCompleteResponse> call, Response<AutoCompleteResponse> response) {
-
-                if (response.isSuccessful()) {
-                    /*if (response.body().getResults().size() > 6) {
-                        for (int i = 0; i < 6; i++) {
-                            movieModelList.add(response.body().getResults().get(i));
-                        }
-                    } else {
-                        movieModelList.addAll(response.body().getResults());
-                    }
-                    pagerAdapterBanners.notifyDataSetChanged();
-                    mainRecyclerAdapter.notifyDataSetChanged();*/
-                    System.out.println("aaaaaaaaaaaaaaa1 "+response.body().getPredictions().size()
-                            +" "+response.body().getPredictions().get(1).getDescription()+" "+response.body().getStatus());
-
-                } else {
-
-                    try {
-                        Log.v("aaaaaaaaaaaaaaa2", response.errorBody().toString());
-                    } catch (Exception e) {
-                        e.printStackTrace();
-                    }
-
-                }
-
-            }
-
-            @Override
-            public void onFailure(Call<AutoCompleteResponse> call, Throwable t) {
-
-            }
-        });
-    }
 
     private void setGetLocation() {
         String locationEnter = searchText.getText().toString();
@@ -379,7 +369,7 @@ public class MapFragmentActivity extends AppCompatActivity implements OnMapReady
                 if (addressList.size() > 0) {
 
                     // lati and longi value of first results in addressList
-                 //  addressList.get(0).getAddressLine(0) , addressList.get(0).getCountryName() ,  addressList.get(0).getLocality()
+                    //  addressList.get(0).getAddressLine(0) , addressList.get(0).getCountryName() ,  addressList.get(0).getLocality()
                     markOnMap(addressList.get(0).getLatitude(), addressList.get(0).getLongitude(), 12);
 
                 }
@@ -389,10 +379,44 @@ public class MapFragmentActivity extends AppCompatActivity implements OnMapReady
         }
     }
 
-    private void hideSoftKeyboard(){
-        this.getWindow().setSoftInputMode(WindowManager.LayoutParams.SOFT_INPUT_STATE_ALWAYS_HIDDEN);
+    public void setGetLocationFromList(String locationEnter) {
+        if (locationEnter == null) {
+            Toast.makeText(MapFragmentActivity.this, "Type location name", Toast.LENGTH_SHORT).show();
+        } else {
+            keywordSearch = false;
+            searchText.setText(locationEnter);
+            hideSoftKeyboard();
 
+            runOnUiThread(new Runnable() {
+                @Override
+                public void run() {
+                    Geocoder geocoder = new Geocoder(MapFragmentActivity.this, Locale.getDefault());
+                    try {
+                        List<Address> addressList = geocoder.getFromLocationName(locationEnter, 1); // get only one results. you can add more
+
+                        if (addressList.size() > 0) {
+
+                            // lati and longi value of first results in addressList
+                            //  addressList.get(0).getAddressLine(0) , addressList.get(0).getCountryName() ,  addressList.get(0).getLocality()
+                            markOnMap(addressList.get(0).getLatitude(), addressList.get(0).getLongitude(), 14);
+                            hideSoftKeyboard();
+                        }
+                    } catch (IOException e) {
+                        e.printStackTrace();
+                    }
+                }
+            });
+        }
     }
+
+    private void hideSoftKeyboard() {
+        View view = this.getCurrentFocus();
+        if (view != null) {
+            InputMethodManager imm = (InputMethodManager) getSystemService(Context.INPUT_METHOD_SERVICE);
+            imm.hideSoftInputFromWindow(view.getWindowToken(), 0);
+        }
+    }
+
 
     public void closeBackgroundMethods() {
         if (fusedLocationProviderClient != null) {
@@ -540,7 +564,6 @@ public class MapFragmentActivity extends AppCompatActivity implements OnMapReady
     }
 
 
-
     public void checkPermissions(Bundle savedInstanceState) {
         Dexter.withContext(this).withPermission(Manifest.permission.ACCESS_FINE_LOCATION).withListener(new PermissionListener() {
             @Override
@@ -619,4 +642,6 @@ public class MapFragmentActivity extends AppCompatActivity implements OnMapReady
         }
         return super.onOptionsItemSelected(item);
     }
+
+
 }
