@@ -43,7 +43,7 @@ public class RecyclerAdapterAutoComplete extends RecyclerView.Adapter<RecyclerAd
         holder.locationDescription.setOnClickListener(new View.OnClickListener() {
             @Override
             public void onClick(View view) {
-                context.setGetLocationFromList(getPredictionsList.get(holder.getAdapterPosition()).getDescription());
+                context.setGetLocationFromPlaceID(getPredictionsList.get(holder.getAdapterPosition()).getDescription(),getPredictionsList.get(holder.getAdapterPosition()).getPlace_id());
 
             }
         });

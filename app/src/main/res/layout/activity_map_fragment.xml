@@ -12,11 +12,11 @@
         android:id="@+id/searchLayout"
         android:layout_width="match_parent"
         android:layout_height="wrap_content"
+        android:layout_margin="5dp"
         android:background="@drawable/search_edt"
         android:elevation="3dp"
         android:orientation="horizontal"
         android:weightSum="10"
-        android:layout_margin="5dp"
         app:layout_constraintEnd_toEndOf="parent"
         app:layout_constraintStart_toStartOf="parent"
         app:layout_constraintTop_toTopOf="parent">
@@ -52,7 +52,7 @@
         android:layout_height="wrap_content"
         android:layout_marginTop="5dp"
         android:layout_marginBottom="5dp"
-        android:gravity="center"
+        android:gravity="center|left"
         android:orientation="horizontal"
         app:layout_constraintEnd_toEndOf="parent"
         app:layout_constraintStart_toStartOf="parent"
@@ -185,6 +185,45 @@
 
     </LinearLayout>
 
+    <LinearLayout
+        android:id="@+id/menuLayout2"
+        android:layout_width="match_parent"
+        android:layout_height="wrap_content"
+        android:layout_marginTop="5dp"
+        android:layout_marginBottom="5dp"
+        android:gravity="center|left"
+        android:orientation="horizontal"
+        app:layout_constraintEnd_toEndOf="parent"
+        app:layout_constraintStart_toStartOf="parent"
+        app:layout_constraintTop_toBottomOf="@+id/menuLayout">
+
+
+        <LinearLayout
+            android:id="@+id/locationInfo"
+            android:layout_width="wrap_content"
+            android:layout_height="wrap_content"
+            android:layout_gravity="center"
+            android:layout_margin="5dp"
+            android:background="@drawable/search_edt"
+            android:elevation="3dp"
+            android:orientation="vertical">
+
+            <ImageView
+                android:layout_width="35dp"
+                android:layout_height="35dp"
+                android:layout_gravity="center"
+                app:srcCompat="@drawable/ic_baseline_info_24"
+                app:tint="#F42E8B" />
+
+            <TextView
+                android:layout_width="wrap_content"
+                android:layout_height="wrap_content"
+                android:layout_margin="5dp"
+                android:text="Location Info"
+                android:textSize="11dp" /><!-- Restrict Google Map to Specific Area -->
+        </LinearLayout>
+
+    </LinearLayout>
 
     <fragment
         android:id="@+id/map_Fragment"
@@ -194,7 +233,7 @@
         app:layout_constraintBottom_toBottomOf="parent"
         app:layout_constraintEnd_toEndOf="parent"
         app:layout_constraintStart_toStartOf="parent"
-        app:layout_constraintTop_toBottomOf="@+id/menuLayout" />
+        app:layout_constraintTop_toBottomOf="@+id/menuLayout2" />
 
     <RelativeLayout
         android:id="@+id/autoCompletePlaces"
@@ -208,8 +247,8 @@
         <androidx.recyclerview.widget.RecyclerView
             android:id="@+id/recyclerView"
             android:layout_width="match_parent"
-            android:visibility="gone"
-            android:layout_height="wrap_content" />
+            android:layout_height="wrap_content"
+            android:visibility="gone" />
 
         <TextView
             android:id="@+id/empty_msg"
@@ -219,8 +258,7 @@
             android:layout_centerVertical="true"
             android:gravity="center"
             android:text="No data found"
-            android:visibility="gone"
-            />
+            android:visibility="gone" />
 
     </RelativeLayout>
 </androidx.constraintlayout.widget.ConstraintLayout>

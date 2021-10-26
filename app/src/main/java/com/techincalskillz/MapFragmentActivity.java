@@ -44,6 +44,7 @@ import android.widget.Toast;
 import com.google.android.gms.common.ConnectionResult;
 import com.google.android.gms.common.GoogleApiAvailability;
 import com.google.android.gms.common.api.ApiException;
+import com.google.android.gms.common.api.PendingResult;
 import com.google.android.gms.common.api.ResolvableApiException;
 import com.google.android.gms.location.FusedLocationProviderClient;
 import com.google.android.gms.location.LocationCallback;
@@ -60,11 +61,15 @@ import com.google.android.gms.maps.MapFragment;
 import com.google.android.gms.maps.OnMapReadyCallback;
 import com.google.android.gms.maps.model.LatLng;
 import com.google.android.gms.maps.model.LatLngBounds;
+import com.google.android.gms.maps.model.Marker;
 import com.google.android.gms.maps.model.MarkerOptions;
 import com.google.android.gms.tasks.OnCompleteListener;
 import com.google.android.gms.tasks.Task;
 import com.google.android.libraries.places.api.Places;
 import com.google.android.libraries.places.api.model.Place;
+import com.google.android.libraries.places.api.net.FetchPlaceRequest;
+import com.google.android.libraries.places.api.net.FetchPlaceResponse;
+import com.google.android.libraries.places.api.net.PlacesClient;
 import com.google.android.libraries.places.widget.Autocomplete;
 import com.google.android.libraries.places.widget.model.AutocompleteActivityMode;
 import com.karumi.dexter.Dexter;
@@ -76,6 +81,7 @@ import com.karumi.dexter.listener.single.PermissionListener;
 import com.techincalskillz.retrofit_singleton_pattern.AutoCompleteApiInterface;
 import com.techincalskillz.retrofit_singleton_pattern.Credentials;
 import com.techincalskillz.retrofit_singleton_pattern.Model.PredictionArrayModel;
+import com.techincalskillz.retrofit_singleton_pattern.adapters.CustomMakerAdapter;
 import com.techincalskillz.retrofit_singleton_pattern.adapters.RecyclerAdapterAutoComplete;
 import com.techincalskillz.retrofit_singleton_pattern.response.AutoCompleteResponse;
 import com.techincalskillz.retrofit_singleton_pattern.ServiceClass;
@@ -95,7 +101,7 @@ public class MapFragmentActivity extends AppCompatActivity implements OnMapReady
     GoogleMap googleMap;
     EditText searchText;
     ImageView searchIcon;
-    LinearLayout getLocationName, moveAnimationCam, stickMap, currentLocation, notiLocation;
+    LinearLayout getLocationName, locationInfo, moveAnimationCam, stickMap, currentLocation, notiLocation;
     LocationRequest locationRequest;
     FusedLocationProviderClient fusedLocationProviderClient;
     boolean currentLocationUpdate = false;
@@ -106,6 +112,7 @@ public class MapFragmentActivity extends AppCompatActivity implements OnMapReady
     TextView empty_msg;
     RecyclerAdapterAutoComplete mainRecyclerAdapter;
     boolean keywordSearch = true;
+    Marker mainMarker;
 
     @Override
     protected void onActivityResult(int requestCode, int resultCode, @Nullable Intent data) {
@@ -148,6 +155,9 @@ public class MapFragmentActivity extends AppCompatActivity implements OnMapReady
 
         notiLocation = findViewById(R.id.notiLocation);
         notiLocation.setOnClickListener(this);
+
+        locationInfo = findViewById(R.id.locationInfo);
+        locationInfo.setOnClickListener(this);
 
 
         checkPermissions(savedInstanceState);
@@ -256,7 +266,19 @@ public class MapFragmentActivity extends AppCompatActivity implements OnMapReady
             startActivity(intent);
         } else if (view.getId() == R.id.moveAnimationCam) {
             //animation with time
-            markOnMap(6.7230, 80.0647, 15);
+            markOnMap(6.7230, 80.0647, 15,"Nugegoda","Address: Nugegoda\nPhone Number: +94777");
+        } else if (view.getId() == R.id.locationInfo) {
+
+            try{
+                if(mainMarker.isInfoWindowShown()){
+                    mainMarker.hideInfoWindow();
+                }else{
+                    mainMarker.showInfoWindow();
+                }
+            }catch (Exception e){
+
+            }
+
         } else if (view.getId() == R.id.getLocationName) {
             //reverse geocoder
             Geocoder geocoder = new Geocoder(MapFragmentActivity.this, Locale.getDefault());
@@ -312,7 +334,7 @@ public class MapFragmentActivity extends AppCompatActivity implements OnMapReady
                         runOnUiThread(new Runnable() {
                             @Override
                             public void run() {
-                                markOnMap(locationResult.getLastLocation().getLatitude(), locationResult.getLastLocation().getLongitude(), 15);
+                                markOnMap(locationResult.getLastLocation().getLatitude(), locationResult.getLastLocation().getLongitude(), 15,"Current Location","Address: Nugegoda\nPhone Number: +94777");
                                 //Log.d("aaaaaaa1",locationResult.getLastLocation().getLatitude() + " Longitude: " + locationResult.getLastLocation().getLongitude());
                                 //  System.out.println("aaaaaaaa2 " + "Latitude: " + locationResult.getLastLocation().getLatitude() + " Longitude: " + locationResult.getLastLocation().getLongitude());
                             }
@@ -370,7 +392,7 @@ public class MapFragmentActivity extends AppCompatActivity implements OnMapReady
 
                     // lati and longi value of first results in addressList
                     //  addressList.get(0).getAddressLine(0) , addressList.get(0).getCountryName() ,  addressList.get(0).getLocality()
-                    markOnMap(addressList.get(0).getLatitude(), addressList.get(0).getLongitude(), 12);
+                    markOnMap(addressList.get(0).getLatitude(), addressList.get(0).getLongitude(), 12,addressList.get(0).getCountryName(),"Address: "+addressList.get(0).getAddressLine(0) +"\nPhone Number: "+addressList.get(0).getPhone());
 
                 }
             } catch (IOException e) {
@@ -379,34 +401,37 @@ public class MapFragmentActivity extends AppCompatActivity implements OnMapReady
         }
     }
 
-    public void setGetLocationFromList(String locationEnter) {
-        if (locationEnter == null) {
-            Toast.makeText(MapFragmentActivity.this, "Type location name", Toast.LENGTH_SHORT).show();
-        } else {
-            keywordSearch = false;
-            searchText.setText(locationEnter);
+    public void setGetLocationFromPlaceID(String locationEnter, String place_id) {
+
+         keywordSearch = false;
+        searchText.setText(locationEnter);
+        hideSoftKeyboard();
+
+        Places.initialize(getApplicationContext(), "AIzaSyB6AVYYBx_GkxYQuEEJHZqWqVuNMEbM7ow");
+        final List<Place.Field> placeFields = Arrays.asList(Place.Field.ID, Place.Field.NAME, Place.Field.LAT_LNG, Place.Field.ADDRESS, Place.Field.RATING);
+
+        final FetchPlaceRequest request = FetchPlaceRequest.newInstance(place_id, placeFields);
+
+
+        PlacesClient placesClient = Places.createClient(this);
+
+        placesClient.fetchPlace(request).addOnSuccessListener((response) -> {
+            Place place = response.getPlace();
+
+        //    System.out.println("aaaaaa company name"+place.getName()+" / company address"+place.getAddress()+" / "+place.getPhoneNumber()+" / "+place.getWebsiteUri()+" / ");
+
+
+           markOnMap(place.getLatLng().latitude, place.getLatLng().longitude, 14, place.getName(),"Address: "+place.getAddress()+"\nPhone Number: "+place.getPhoneNumber());
             hideSoftKeyboard();
 
-            runOnUiThread(new Runnable() {
-                @Override
-                public void run() {
-                    Geocoder geocoder = new Geocoder(MapFragmentActivity.this, Locale.getDefault());
-                    try {
-                        List<Address> addressList = geocoder.getFromLocationName(locationEnter, 1); // get only one results. you can add more
-
-                        if (addressList.size() > 0) {
-
-                            // lati and longi value of first results in addressList
-                            //  addressList.get(0).getAddressLine(0) , addressList.get(0).getCountryName() ,  addressList.get(0).getLocality()
-                            markOnMap(addressList.get(0).getLatitude(), addressList.get(0).getLongitude(), 14);
-                            hideSoftKeyboard();
-                        }
-                    } catch (IOException e) {
-                        e.printStackTrace();
-                    }
-                }
-            });
-        }
+        }).addOnFailureListener((exception) -> {
+            if (exception instanceof ApiException) {
+                final ApiException apiException = (ApiException) exception;
+                Log.e("aaaaa11", "aaaaa11 " + exception.getMessage());
+                final int statusCode = apiException.getStatusCode();
+                // TODO: Handle error with given status code.
+            }
+        });
     }
 
     private void hideSoftKeyboard() {
@@ -445,16 +470,18 @@ public class MapFragmentActivity extends AppCompatActivity implements OnMapReady
         closeBackgroundMethods();
     }
 
-    public void markOnMap(double latitude, double longitude, float zoomLevel) {
+    public void markOnMap(double latitude, double longitude, float zoomLevel, String locationName, String snippet) {
 
         googleMap.clear(); // clear map and remove markers
 
+        googleMap.setInfoWindowAdapter(new CustomMakerAdapter(MapFragmentActivity.this));
         LatLng latLng = new LatLng(latitude, longitude);
         MarkerOptions markerOptions = new MarkerOptions();
-        markerOptions.title("My Position");
+        markerOptions.title(locationName);
         markerOptions.position(latLng);
+        markerOptions.snippet(snippet); //place info's
         // googleMap.addMarker(markerOptions).remove();
-        googleMap.addMarker(markerOptions);
+        mainMarker= googleMap.addMarker(markerOptions);
         CameraUpdate cameraUpdate = CameraUpdateFactory.newLatLngZoom(latLng, zoomLevel);  //max zoom 21. 1world, 5Continents, 10Cities, 15Streets, 20Buildings
         //googleMap.moveCamera(cameraUpdate); //directly show
         // googleMap.animateCamera(cameraUpdate); // moving to position without time
@@ -492,7 +519,7 @@ public class MapFragmentActivity extends AppCompatActivity implements OnMapReady
     public void onMapReady(@NonNull GoogleMap googleMap) {
         this.googleMap = googleMap;
 
-        markOnMap(6.8649, 79.8997, 15);
+        markOnMap(6.8649, 79.8997, 15,"My Location","Address: Nugegoda\nPhone Number: +94777");
 
         googleMap.getUiSettings().setZoomControlsEnabled(true);
         googleMap.getUiSettings().setCompassEnabled(true); // Compass not showing until you rotate the map
