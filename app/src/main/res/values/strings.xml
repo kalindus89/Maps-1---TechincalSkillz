@@ -1,5 +1,5 @@
 <resources>
-    <string name="app_name">Techincal Skillz Maps 1</string>
+    <string name="app_name">Maps 1</string>
     <string name="google_geo_api_key">AIzaSyB6AVYYBx_GkxYQuEEJHZqWqVuNMEbM7ow</string>
 
     <plurals name="num_location_reported">
