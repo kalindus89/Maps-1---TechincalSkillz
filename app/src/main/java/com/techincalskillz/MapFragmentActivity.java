@@ -1,5 +1,7 @@
 package com.techincalskillz;
 
+import static android.content.ContentValues.TAG;
+
 import androidx.activity.result.ActivityResult;
 import androidx.activity.result.ActivityResultCallback;
 import androidx.activity.result.ActivityResultLauncher;
@@ -95,13 +97,13 @@ import retrofit2.Call;
 import retrofit2.Callback;
 import retrofit2.Response;
 
-public class MapFragmentActivity extends AppCompatActivity implements OnMapReadyCallback, View.OnClickListener {
+public class MapFragmentActivity extends AppCompatActivity implements OnMapReadyCallback, View.OnClickListener, GoogleMap.OnMapClickListener {
 
 
     GoogleMap googleMap;
     EditText searchText;
     ImageView searchIcon;
-    LinearLayout getLocationName, locationInfo, moveAnimationCam, stickMap, currentLocation, notiLocation;
+    LinearLayout getLocationName, locationInfo, moveAnimationCam, stickMap, currentLocation, notiLocation,routeInGoogleMap;
     LocationRequest locationRequest;
     FusedLocationProviderClient fusedLocationProviderClient;
     boolean currentLocationUpdate = false;
@@ -158,6 +160,10 @@ public class MapFragmentActivity extends AppCompatActivity implements OnMapReady
 
         locationInfo = findViewById(R.id.locationInfo);
         locationInfo.setOnClickListener(this);
+
+        routeInGoogleMap = findViewById(R.id.routeInGoogleMap);
+        routeInGoogleMap.setOnClickListener(this);
+
 
 
         checkPermissions(savedInstanceState);
@@ -253,6 +259,12 @@ public class MapFragmentActivity extends AppCompatActivity implements OnMapReady
         }
     }
 
+    @Override
+    public void onMapClick(@NonNull LatLng latLng) {
+
+        getLocationDetails(latLng);
+
+    }
 
     @Override
     public void onClick(View view) {
@@ -281,30 +293,41 @@ public class MapFragmentActivity extends AppCompatActivity implements OnMapReady
 
         } else if (view.getId() == R.id.getLocationName) {
             //reverse geocoder
-            Geocoder geocoder = new Geocoder(MapFragmentActivity.this, Locale.getDefault());
-            try {
-                List<Address> addressList = geocoder.getFromLocation(6.8649, 79.8997, 1); // get only one results. you can add more
+           getLocationDetails(new LatLng(6.8649, 79.8997));
+        }
 
-                if (addressList.size() > 0) {
+        else if (view.getId() == R.id.routeInGoogleMap) {
 
+            //open route in mp
 
-                    Toast.makeText(MapFragmentActivity.this, "Country " + addressList.get(0).getCountryName() + " city:" + addressList.get(0).getLocality() + " : country code:" + addressList.get(0).getCountryCode(), Toast.LENGTH_SHORT).show();
+            String latitude = String.valueOf(6.7230);  //destination latitude
+            String longitude = String.valueOf(80.0647); //destination longitude
 
+            Uri gmmIntentUri = Uri.parse("google.navigation:q=" + latitude + "," + longitude);
+            Intent mapIntent = new Intent(Intent.ACTION_VIEW, gmmIntentUri);
+            mapIntent.setPackage("com.google.android.apps.maps");
+
+            try{
+                if (mapIntent.resolveActivity(getPackageManager()) != null) {
+                    startActivity(mapIntent);
                 }
-            } catch (IOException e) {
-                e.printStackTrace();
+            }catch (NullPointerException e){
+                Log.e(TAG, "onClick: NullPointerException: Couldn't open map." + e.getMessage() );
+                Toast.makeText(MapFragmentActivity.this, "Couldn't open map", Toast.LENGTH_SHORT).show();
             }
-        } else if (view.getId() == R.id.stickMap) {
+        }
 
-            double bottomBoundry = 6.7230 - 0.3;
-            double leftoundry = 80.0647 - 0.3;
-            double topBoundry = 6.7230 + 0.3;
-            double rightBoundry = 80.0647 + 0.3;
+        else if (view.getId() == R.id.stickMap) {
 
-            LatLngBounds latLngBounds = new LatLngBounds(new LatLng(bottomBoundry, leftoundry), new LatLng(topBoundry, rightBoundry));
+            double bottomBoundary = 6.7230 - 0.3;
+            double leftBoundary = 80.0647 - 0.3;
+            double topBoundary = 6.7230 + 0.3;
+            double rightBoundary = 80.0647 + 0.3;
 
-            //googleMap.animateCamera(CameraUpdateFactory.newLatLngBounds(latLngBounds,1));
-            googleMap.setLatLngBoundsForCameraTarget(latLngBounds);
+            LatLngBounds latLngBounds = new LatLngBounds(new LatLng(bottomBoundary, leftBoundary), new LatLng(topBoundary, rightBoundary));
+
+            googleMap.animateCamera(CameraUpdateFactory.newLatLngBounds(latLngBounds,0));
+           // googleMap.setLatLngBoundsForCameraTarget(latLngBounds);
             //googleMap.animateCamera(CameraUpdateFactory.newLatLngBounds(latLngBounds,400,400,1));
 
             MarkerOptions markerOptions = new MarkerOptions();
@@ -374,6 +397,26 @@ public class MapFragmentActivity extends AppCompatActivity implements OnMapReady
 
 
             }
+        }
+    }
+
+    public void getLocationDetails(LatLng latLng){
+        Geocoder geocoder = new Geocoder(MapFragmentActivity.this, Locale.getDefault());
+        try {
+
+            List<Address> addressList = geocoder.getFromLocation(latLng.latitude, latLng.longitude, 1); // get only one results. you can add more
+
+            if (addressList.size() > 0) {
+
+
+                Toast.makeText(MapFragmentActivity.this, "Country " + addressList.get(0).getCountryName() +
+                        " city:" + addressList.get(0).getLocality()
+                        + " : country code:" + addressList.get(0).getCountryCode()
+                        +" Address Line "+addressList.get(0).getAddressLine(0), Toast.LENGTH_SHORT).show();
+
+            }
+        } catch (IOException e) {
+            e.printStackTrace();
         }
     }
 
@@ -520,6 +563,8 @@ public class MapFragmentActivity extends AppCompatActivity implements OnMapReady
         this.googleMap = googleMap;
 
         markOnMap(6.8649, 79.8997, 15,"My Location","Address: Nugegoda\nPhone Number: +94777");
+
+        googleMap.setOnMapClickListener(this);
 
         googleMap.getUiSettings().setZoomControlsEnabled(true);
         googleMap.getUiSettings().setCompassEnabled(true); // Compass not showing until you rotate the map
@@ -669,6 +714,7 @@ public class MapFragmentActivity extends AppCompatActivity implements OnMapReady
         }
         return super.onOptionsItemSelected(item);
     }
+
 
 
 }
