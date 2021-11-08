@@ -16,9 +16,13 @@
         android:roundIcon="@mipmap/ic_launcher_round"
         android:supportsRtl="true"
         android:theme="@style/Theme.TechincalSkillzMaps1">
+        <activity
+            android:name=".your_truly_taxi.YourTrulyActivity"
+            android:exported="false" />
+
         <service
             android:name=".mitch_2017_easy_learn_android.MyBackgroundLocationIntentService"
-            android:exported="false"></service>
+            android:exported="false" />
         <service
             android:name=".mitch_2017_easy_learn_android.MyBackgroundLocationService"
             android:enabled="true"

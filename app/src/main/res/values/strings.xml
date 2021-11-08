@@ -3,9 +3,9 @@
     <string name="google_geo_api_key">AIzaSyB6AVYYBx_GkxYQuEEJHZqWqVuNMEbM7ow</string>
 
     <plurals name="num_location_reported">
-            <item quantity="zero">No location reported</item>
-            <item quantity="one">One location reported</item>
-            <item quantity="two">Two location reported</item>
-            <item quantity="other">%d location reported</item>
+        <item quantity="zero">No location reported</item>
+        <item quantity="one">One location reported</item>
+        <item quantity="two">Two location reported</item>
+        <item quantity="other">%d location reported</item>
     </plurals>
 </resources>
