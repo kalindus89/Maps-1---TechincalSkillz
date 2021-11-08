@@ -596,7 +596,7 @@ public class MapFragmentActivity extends AppCompatActivity implements OnMapReady
         locationRequest = LocationRequest.create();
         locationRequest.setPriority(LocationRequest.PRIORITY_HIGH_ACCURACY);
         locationRequest.setInterval(5000); // location update time
-        locationRequest.setFastestInterval(3000); // location update time
+        locationRequest.setFastestInterval(3000); // location update from the other apps in phone
 
         LocationSettingsRequest.Builder builder = new LocationSettingsRequest.Builder()
                 .addLocationRequest(locationRequest)

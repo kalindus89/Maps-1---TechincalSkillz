@@ -17,7 +17,30 @@
         app:layout_constraintEnd_toEndOf="parent"
         app:layout_constraintStart_toStartOf="parent"
         app:layout_constraintTop_toTopOf="parent">
+        <LinearLayout
+            android:id="@+id/currentLocation"
+            android:layout_width="wrap_content"
+            android:layout_height="wrap_content"
+            android:layout_gravity="center"
+            android:layout_margin="5dp"
+            android:background="@drawable/search_edt"
+            android:elevation="3dp"
+            android:orientation="vertical">
 
+            <ImageView
+                android:layout_width="35dp"
+                android:layout_height="35dp"
+                android:layout_gravity="center"
+                app:srcCompat="@drawable/ic_baseline_location_on_24"
+                app:tint="#F42E8B" />
+
+            <TextView
+                android:layout_width="wrap_content"
+                android:layout_height="wrap_content"
+                android:layout_margin="5dp"
+                android:text="Update Location"
+                android:textSize="11dp" /><!-- Restrict Google Map to Specific Area -->
+        </LinearLayout>
         <LinearLayout
             android:id="@+id/getLocationName"
             android:layout_width="wrap_content"
@@ -39,7 +62,31 @@
                 android:layout_width="wrap_content"
                 android:layout_height="wrap_content"
                 android:layout_margin="5dp"
-                android:text="Place Name"
+                android:text="Place From Name"
+                android:textSize="11dp" />
+        </LinearLayout>
+        <LinearLayout
+            android:id="@+id/getLocationDetails"
+            android:layout_width="wrap_content"
+            android:layout_height="wrap_content"
+            android:layout_gravity="center"
+            android:layout_margin="5dp"
+            android:background="@drawable/search_edt"
+            android:elevation="3dp"
+            android:orientation="vertical">
+
+            <ImageView
+                android:layout_width="35dp"
+                android:layout_height="35dp"
+                android:layout_gravity="center"
+                app:srcCompat="@drawable/ic_baseline_map_24"
+                app:tint="#F42E8B" />
+
+            <TextView
+                android:layout_width="wrap_content"
+                android:layout_height="wrap_content"
+                android:layout_margin="5dp"
+                android:text="Place From LatLng"
                 android:textSize="11dp" />
         </LinearLayout>
 

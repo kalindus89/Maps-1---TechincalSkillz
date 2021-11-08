@@ -2,9 +2,30 @@ package com.techincalskillz.your_truly_taxi;
 
 import androidx.annotation.NonNull;
 import androidx.appcompat.app.AppCompatActivity;
+import androidx.core.app.ActivityCompat;
 
+import android.Manifest;
+import android.content.IntentSender;
+import android.content.pm.PackageManager;
+import android.location.Address;
+import android.location.Geocoder;
+import android.location.Location;
 import android.os.Bundle;
+import android.os.HandlerThread;
+import android.view.View;
+import android.widget.LinearLayout;
+import android.widget.Toast;
 
+import com.google.android.gms.common.api.ResolvableApiException;
+import com.google.android.gms.location.FusedLocationProviderClient;
+import com.google.android.gms.location.LocationCallback;
+import com.google.android.gms.location.LocationRequest;
+import com.google.android.gms.location.LocationResult;
+import com.google.android.gms.location.LocationServices;
+import com.google.android.gms.location.LocationSettingsRequest;
+import com.google.android.gms.location.LocationSettingsResponse;
+import com.google.android.gms.location.LocationSettingsStatusCodes;
+import com.google.android.gms.location.SettingsClient;
 import com.google.android.gms.maps.CameraUpdate;
 import com.google.android.gms.maps.CameraUpdateFactory;
 import com.google.android.gms.maps.GoogleMap;
@@ -13,50 +34,189 @@ import com.google.android.gms.maps.OnMapReadyCallback;
 import com.google.android.gms.maps.model.LatLng;
 import com.google.android.gms.maps.model.Marker;
 import com.google.android.gms.maps.model.MarkerOptions;
+import com.google.android.gms.tasks.OnFailureListener;
+import com.google.android.gms.tasks.OnSuccessListener;
+import com.google.android.gms.tasks.Task;
 import com.techincalskillz.R;
 import com.techincalskillz.mitch_2017_easy_learn_android.MapFragmentActivity;
 import com.techincalskillz.retrofit_singleton_pattern.adapters.CustomMakerAdapter;
 
-public class YourTrulyActivity extends AppCompatActivity implements OnMapReadyCallback {
+import java.io.IOException;
+import java.util.List;
+import java.util.Locale;
+
+public class YourTrulyActivity extends AppCompatActivity implements OnMapReadyCallback, View.OnClickListener, GoogleMap.OnMapLongClickListener, GoogleMap.OnMarkerDragListener {
 
     GoogleMap googleMap;
     Marker mainMarker;
+    FusedLocationProviderClient fusedLocationProviderClient;
+    LocationRequest locationRequest;
+    HandlerThread handlerThread;
+    LinearLayout currentLocation, getLocationName,getLocationDetails;
+
+    // get Current location update continuously and app in background also
+    LocationCallback locationCallBack = new LocationCallback() {
+        @Override
+        public void onLocationResult(@NonNull LocationResult locationResult) {
+            super.onLocationResult(locationResult);
+            if (locationResult == null) {
+                return;
+            }
+
+            runOnUiThread(new Runnable() {
+                @Override
+                public void run() {
+                    //    markOnMap(locationResult.getLastLocation().getLatitude(), locationResult.getLastLocation().getLongitude(), 15, "Current Location", "Address: Nugegoda\nPhone Number: +94777");
+                    //Log.d("aaaaaaa1",locationResult.getLastLocation().getLatitude() + " Longitude: " + locationResult.getLastLocation().getLongitude());
+                    //  System.out.println("aaaaaaaa2 " + "Latitude: " + locationResult.getLastLocation().getLatitude() + " Longitude: " + locationResult.getLastLocation().getLongitude());
+                }
+            });
+
+        }
+    };
 
     @Override
     protected void onCreate(Bundle savedInstanceState) {
         super.onCreate(savedInstanceState);
         setContentView(R.layout.activity_your_truly);
 
-        getSupportActionBar().hide();
+        currentLocation = findViewById(R.id.currentLocation);
+        currentLocation.setOnClickListener(this);
 
-        showMap();
-    }
+        getLocationName = findViewById(R.id.getLocationName);
+        getLocationName.setOnClickListener(this);
 
-    private void showMap() {
+        getLocationDetails = findViewById(R.id.getLocationDetails);
+        getLocationDetails.setOnClickListener(this);
+
+
+      //  getSupportActionBar().hide();
 
         MapFragment mapFragment = (MapFragment) getFragmentManager().findFragmentById(R.id.map_Fragment);
         mapFragment.getMapAsync(this); //onMapReady method automatically call. your Default map
 
+        fusedLocationProviderClient = LocationServices.getFusedLocationProviderClient(YourTrulyActivity.this);
+
+        locationRequest = LocationRequest.create();
+        locationRequest.setPriority(LocationRequest.PRIORITY_HIGH_ACCURACY);
+        locationRequest.setInterval(5000); // location update time
+        locationRequest.setFastestInterval(3000); // location update from the other apps in phone
+
+        //
+
+        getLastLocation();
+    }
+
+    private void checkSettingsAndStartLocationUpdates() {
+
+        LocationSettingsRequest.Builder builder = new LocationSettingsRequest.Builder()
+                .addLocationRequest(locationRequest)
+                .setAlwaysShow(true);
+
+        SettingsClient settingsClient = LocationServices.getSettingsClient(this);
+
+        Task<LocationSettingsResponse> locationSettingsResponseTask = settingsClient.checkLocationSettings(builder.build());
+
+        locationSettingsResponseTask.addOnSuccessListener(new OnSuccessListener<LocationSettingsResponse>() {
+            @Override
+            public void onSuccess(LocationSettingsResponse locationSettingsResponse) {
+
+                startLocationUpdates(); // setting of device is satisfied. GPS is on
+
+            }
+        }).addOnFailureListener(new OnFailureListener() {
+            @Override
+            public void onFailure(@NonNull Exception e) {
+
+                if (e instanceof ResolvableApiException) {
+                    ResolvableApiException resolvableApiException = (ResolvableApiException) e;
+                    try {
+                        resolvableApiException.startResolutionForResult(YourTrulyActivity.this, 101);
+                    } catch (IntentSender.SendIntentException sendIntentException) {
+                        sendIntentException.printStackTrace();
+                    }
+                }
+
+
+            }
+        });
+
+    }
+
+    private void startLocationUpdates() {
+
+
+        if (ActivityCompat.checkSelfPermission(this, Manifest.permission.ACCESS_FINE_LOCATION) != PackageManager.PERMISSION_GRANTED && ActivityCompat.checkSelfPermission(this, Manifest.permission.ACCESS_COARSE_LOCATION) != PackageManager.PERMISSION_GRANTED) {
+            return;
+        }
+
+        handlerThread = new HandlerThread("LocationCallBackThread");
+        handlerThread.start();
+        fusedLocationProviderClient.requestLocationUpdates(locationRequest, locationCallBack, handlerThread.getLooper());
+    }
+
+    public void stopLocationUpdates() {
+        if (fusedLocationProviderClient != null) {
+            fusedLocationProviderClient.removeLocationUpdates(locationCallBack);
+        }
+        if (handlerThread != null) {
+            handlerThread.quit();
+        }
+    }
+
+    private void getLastLocation() {
+
+        if (ActivityCompat.checkSelfPermission(this, Manifest.permission.ACCESS_FINE_LOCATION) != PackageManager.PERMISSION_GRANTED && ActivityCompat.checkSelfPermission(this, Manifest.permission.ACCESS_COARSE_LOCATION) != PackageManager.PERMISSION_GRANTED) {
+
+            return;
+        }
+
+        fusedLocationProviderClient.getLastLocation().addOnSuccessListener(new OnSuccessListener<Location>() {
+            @Override
+            public void onSuccess(Location location) {
+                if (location != null) {
+                    Toast.makeText(YourTrulyActivity.this, "Latitude1: " + location.getLatitude() + " Longitude1: " + location.getLongitude(), Toast.LENGTH_SHORT).show();
+                    markOnMap(location.getLatitude(), location.getLongitude(), 15, "My Location", "Address: Nugegoda\nPhone Number: +94777");
+                } else {
+                    Toast.makeText(YourTrulyActivity.this, "No location found", Toast.LENGTH_SHORT).show();
+
+                }
+            }
+        });
     }
 
     @Override
     public void onMapReady(@NonNull GoogleMap googleMap) {
         this.googleMap = googleMap;
 
-        markOnMap(6.8649, 79.8997, 15,"My Location","Address: Nugegoda\nPhone Number: +94777");
+        // markOnMap(6.8649, 79.8997, 15,"My Location","Address: Nugegoda\nPhone Number: +94777");
+
+        googleMap.setOnMapLongClickListener(this);
+        googleMap.setOnMarkerDragListener(this);
+
+
+        //to get current location maker on the map
+        if (ActivityCompat.checkSelfPermission(this, Manifest.permission.ACCESS_FINE_LOCATION) != PackageManager.PERMISSION_GRANTED && ActivityCompat.checkSelfPermission(this, Manifest.permission.ACCESS_COARSE_LOCATION) != PackageManager.PERMISSION_GRANTED) {
+            return;
+        }
+        googleMap.setMyLocationEnabled(true);
+        googleMap.getUiSettings().setZoomControlsEnabled(true);
+
     }
 
     public void markOnMap(double latitude, double longitude, float zoomLevel, String locationName, String snippet) {
 
         googleMap.clear(); // clear map and remove markers
 
+        googleMap.setMapType(GoogleMap.MAP_TYPE_NORMAL);
         googleMap.setInfoWindowAdapter(new CustomMakerAdapter(YourTrulyActivity.this));
         LatLng latLng = new LatLng(latitude, longitude);
         MarkerOptions markerOptions = new MarkerOptions();
         markerOptions.title(locationName);
         markerOptions.position(latLng);
         markerOptions.snippet(snippet); //place info's
-        mainMarker= googleMap.addMarker(markerOptions);
+        markerOptions.draggable(true);// we can drag marker any where we want. https://www.youtube.com/watch?v=9qGLYKsD-5I&list=PLdHg5T0SNpN3GBUmpGqjiKGMcBaRT2A-m&index=5
+        mainMarker = googleMap.addMarker(markerOptions);
 
         CameraUpdate cameraUpdate = CameraUpdateFactory.newLatLngZoom(latLng, zoomLevel);  //max zoom 21. 1world, 5Continents, 10Cities, 15Streets, 20Buildings
 
@@ -73,5 +233,104 @@ public class YourTrulyActivity extends AppCompatActivity implements OnMapReadyCa
             }
         });
 
+    }
+
+    public void getLocationDetailsFromName(String location) {
+        Geocoder geocoder = new Geocoder(YourTrulyActivity.this, Locale.getDefault());
+        try {
+
+           // List<Address> addressList = geocoder.getFromLocation(latLng.latitude, latLng.longitude, 1); // get only one results. you can add more
+            List<Address> addressList = geocoder.getFromLocationName(location, 1); // get only one results. you can add more
+
+            if (addressList.size() > 0) {
+
+
+                Toast.makeText(YourTrulyActivity.this, "Country " + addressList.get(0).getCountryName() +
+                        " city:" + addressList.get(0).getLocality()
+                        + " : country code:" + addressList.get(0).getCountryCode()
+                        + " Address Line " + addressList.get(0).getAddressLine(0), Toast.LENGTH_SHORT).show();
+
+                markOnMap(addressList.get(0).getLatitude(), addressList.get(0).getLongitude(), 15, addressList.get(0).getLocality(), addressList.get(0).getAddressLine(0));
+
+            }
+        } catch (IOException e) {
+            e.printStackTrace();
+        }
+    }
+
+    public void getLocationDetailsFromLatLong(LatLng latLng) {
+        Geocoder geocoder = new Geocoder(YourTrulyActivity.this, Locale.getDefault());
+        try {
+
+            List<Address> addressList = geocoder.getFromLocation(latLng.latitude, latLng.longitude, 1); // get only one results. you can add more
+
+            if (addressList.size() > 0) {
+
+
+                Toast.makeText(YourTrulyActivity.this, "Country " + addressList.get(0).getCountryName() +
+                        " city:" + addressList.get(0).getLocality()
+                        + " : country code:" + addressList.get(0).getCountryCode()
+                        + " Address Line " + addressList.get(0).getAddressLine(0), Toast.LENGTH_SHORT).show();
+
+                markOnMap(addressList.get(0).getLatitude(), addressList.get(0).getLongitude(), 15, addressList.get(0).getLocality(), addressList.get(0).getAddressLine(0));
+
+            }
+        } catch (IOException e) {
+            e.printStackTrace();
+        }
+    }
+
+    @Override
+    public void onClick(View view) {
+        if (view.getId() == R.id.currentLocation) {
+            checkSettingsAndStartLocationUpdates();
+            //getLastLocation();
+        }
+        else if (view.getId() == R.id.getLocationName) {
+
+            getLocationDetailsFromName("Nugegoda");
+        }
+        else if (view.getId() == R.id.getLocationDetails) {
+
+            getLocationDetailsFromLatLong(new LatLng(6.8649, 79.8997));
+        }
+    }
+
+    @Override
+    public void onMapLongClick(@NonNull LatLng latLng) {
+        getLocationDetailsFromLatLong(latLng);
+    }
+
+    @Override
+    public void onMarkerDragStart(@NonNull Marker marker) {
+    }
+
+    @Override
+    public void onMarkerDrag(@NonNull Marker marker) {
+
+    }
+
+    @Override
+    public void onMarkerDragEnd(@NonNull Marker marker) {
+           getLocationDetailsFromLatLong(marker.getPosition());
+
+    }
+
+    @Override
+    protected void onPause() {
+        super.onPause();
+        stopLocationUpdates();
+    }
+
+    @Override
+    protected void onStop() {
+        super.onStop();
+        stopLocationUpdates();
+    }
+
+    @Override
+    protected void onDestroy() {
+        super.onDestroy();
+        stopLocationUpdates();
     }
 }

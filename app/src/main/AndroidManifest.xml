@@ -17,7 +17,7 @@
         android:supportsRtl="true"
         android:theme="@style/Theme.TechincalSkillzMaps1">
         <activity
-            android:name=".your_truly_taxi.YourTrulyActivity"
+            android:name=".mitch_2017_easy_learn_android.MapFragmentActivity"
             android:exported="false" />
 
         <service
@@ -35,7 +35,7 @@
             android:name=".MainActivity"
             android:exported="false" />
         <activity
-            android:name=".mitch_2017_easy_learn_android.MapFragmentActivity"
+            android:name=".your_truly_taxi.YourTrulyActivity"
             android:exported="true">
             <intent-filter>
                 <action android:name="android.intent.action.MAIN" />
