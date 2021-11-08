@@ -17,21 +17,21 @@
         android:supportsRtl="true"
         android:theme="@style/Theme.TechincalSkillzMaps1">
         <service
-            android:name=".MyBackgroundLocationIntentService"
+            android:name=".mitch_2017_easy_learn_android.MyBackgroundLocationIntentService"
             android:exported="false"></service>
         <service
-            android:name=".MyBackgroundLocationService"
+            android:name=".mitch_2017_easy_learn_android.MyBackgroundLocationService"
             android:enabled="true"
             android:exported="true" />
 
         <activity
-            android:name=".BatchLocationActivity"
+            android:name=".mitch_2017_easy_learn_android.BatchLocationActivity"
             android:exported="false" />
         <activity
             android:name=".MainActivity"
             android:exported="false" />
         <activity
-            android:name=".MapFragmentActivity"
+            android:name=".mitch_2017_easy_learn_android.MapFragmentActivity"
             android:exported="true">
             <intent-filter>
                 <action android:name="android.intent.action.MAIN" />

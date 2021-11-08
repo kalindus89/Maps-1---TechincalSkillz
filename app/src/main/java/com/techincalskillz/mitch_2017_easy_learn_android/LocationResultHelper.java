@@ -1,6 +1,5 @@
-package com.techincalskillz;
+package com.techincalskillz.mitch_2017_easy_learn_android;
 
-import android.app.Notification;
 import android.app.NotificationManager;
 import android.app.PendingIntent;
 import android.app.TaskStackBuilder;
@@ -9,10 +8,12 @@ import android.content.Intent;
 import android.graphics.BitmapFactory;
 import android.graphics.Color;
 import android.location.Location;
-import android.os.Build;
 import android.preference.PreferenceManager;
 
 import androidx.core.app.NotificationCompat;
+
+import com.techincalskillz.App;
+import com.techincalskillz.R;
 
 import java.text.DateFormat;
 import java.util.Date;

@@ -249,6 +249,32 @@
                 android:textSize="11dp" /><!-- Restrict Google Map to Specific Area -->
         </LinearLayout>
 
+
+        <LinearLayout
+            android:id="@+id/taxiMoving"
+            android:layout_width="wrap_content"
+            android:layout_height="wrap_content"
+            android:layout_gravity="center"
+            android:layout_margin="5dp"
+            android:background="@drawable/search_edt"
+            android:elevation="3dp"
+            android:orientation="vertical">
+
+            <ImageView
+                android:layout_width="35dp"
+                android:layout_height="35dp"
+                android:layout_gravity="center"
+                app:srcCompat="@drawable/ic_baseline_local_taxi_24"
+                app:tint="#F42E8B" />
+
+            <TextView
+                android:layout_width="wrap_content"
+                android:layout_height="wrap_content"
+                android:layout_margin="5dp"
+                android:text="Taxi Moving"
+                android:textSize="11dp" /><!-- Restrict Google Map to Specific Area -->
+        </LinearLayout>
+
     </LinearLayout>
 
     <fragment

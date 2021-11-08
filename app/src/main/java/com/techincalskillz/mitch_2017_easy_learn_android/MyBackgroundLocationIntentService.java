@@ -1,9 +1,8 @@
-package com.techincalskillz;
+package com.techincalskillz.mitch_2017_easy_learn_android;
 
 import android.app.IntentService;
 import android.app.Notification;
 import android.content.Intent;
-import android.content.Context;
 import android.location.Location;
 import android.os.Handler;
 import android.os.Looper;
@@ -13,9 +12,10 @@ import android.widget.Toast;
 import androidx.core.app.NotificationCompat;
 
 import com.google.android.gms.location.LocationResult;
+import com.techincalskillz.App;
+import com.techincalskillz.R;
 
 import java.util.List;
-import java.util.logging.LogRecord;
 
 
 public class MyBackgroundLocationIntentService extends IntentService {

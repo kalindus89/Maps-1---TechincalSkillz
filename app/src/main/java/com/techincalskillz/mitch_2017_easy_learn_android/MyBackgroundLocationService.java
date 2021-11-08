@@ -1,16 +1,11 @@
-package com.techincalskillz;
+package com.techincalskillz.mitch_2017_easy_learn_android;
 
 import android.Manifest;
 import android.app.Notification;
-import android.app.PendingIntent;
 import android.app.Service;
-import android.app.TaskStackBuilder;
 import android.content.Intent;
 import android.content.pm.PackageManager;
-import android.graphics.BitmapFactory;
-import android.graphics.Color;
 import android.location.Location;
-import android.location.LocationManager;
 import android.os.IBinder;
 import android.os.Looper;
 import android.util.Log;
@@ -24,6 +19,8 @@ import com.google.android.gms.location.LocationCallback;
 import com.google.android.gms.location.LocationRequest;
 import com.google.android.gms.location.LocationResult;
 import com.google.android.gms.location.LocationServices;
+import com.techincalskillz.App;
+import com.techincalskillz.R;
 
 import java.util.List;
 

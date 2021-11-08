@@ -1,18 +1,14 @@
 package com.techincalskillz.retrofit_singleton_pattern.adapters;
 
-import android.app.Activity;
-import android.content.Context;
 import android.view.LayoutInflater;
 import android.view.View;
 import android.view.ViewGroup;
-import android.widget.ImageView;
 import android.widget.TextView;
 
 import androidx.annotation.NonNull;
-import androidx.recyclerview.widget.LinearLayoutManager;
 import androidx.recyclerview.widget.RecyclerView;
 
-import com.techincalskillz.MapFragmentActivity;
+import com.techincalskillz.mitch_2017_easy_learn_android.MapFragmentActivity;
 import com.techincalskillz.R;
 import com.techincalskillz.retrofit_singleton_pattern.Model.PredictionArrayModel;
 
