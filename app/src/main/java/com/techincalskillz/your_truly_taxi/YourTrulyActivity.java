@@ -114,7 +114,7 @@ public class YourTrulyActivity extends AppCompatActivity implements OnMapReadyCa
         locationRequest.setInterval(3000); // location update time
         locationRequest.setFastestInterval(3000); // location update from the other apps in phone
 
-        getLastLocation();
+        checkSettingsAndStartLocationUpdates();
     }
 
     private void checkSettingsAndStartLocationUpdates() {
@@ -228,7 +228,7 @@ public class YourTrulyActivity extends AppCompatActivity implements OnMapReadyCa
             markerOptions.rotation(lastLocation.getBearing()); // make car icon direction towards the road.
             markerOptions.anchor((float) 0.5,(float) 0.5);// default location fence to center of  car icon.
             carLocationMarker = googleMap.addMarker(markerOptions);
-           // googleMap.animateCamera(CameraUpdateFactory.newLatLngZoom(latLng, 20)); // to animate camara View
+            googleMap.animateCamera(CameraUpdateFactory.newLatLngZoom(latLng, 20)); // to animate camara View
         }
         else {
             //update car marker
@@ -335,8 +335,7 @@ public class YourTrulyActivity extends AppCompatActivity implements OnMapReadyCa
     @Override
     public void onClick(View view) {
         if (view.getId() == R.id.currentLocation) {
-            checkSettingsAndStartLocationUpdates();
-            //getLastLocation();
+            getLastLocation();
         } else if (view.getId() == R.id.getLocationName) {
 
             getLocationDetailsFromName("Nugegoda");
