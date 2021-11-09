@@ -7,6 +7,7 @@ import androidx.core.app.ActivityCompat;
 import android.Manifest;
 import android.content.IntentSender;
 import android.content.pm.PackageManager;
+import android.graphics.Color;
 import android.location.Address;
 import android.location.Geocoder;
 import android.location.Location;
@@ -31,6 +32,9 @@ import com.google.android.gms.maps.CameraUpdateFactory;
 import com.google.android.gms.maps.GoogleMap;
 import com.google.android.gms.maps.MapFragment;
 import com.google.android.gms.maps.OnMapReadyCallback;
+import com.google.android.gms.maps.model.BitmapDescriptorFactory;
+import com.google.android.gms.maps.model.Circle;
+import com.google.android.gms.maps.model.CircleOptions;
 import com.google.android.gms.maps.model.LatLng;
 import com.google.android.gms.maps.model.Marker;
 import com.google.android.gms.maps.model.MarkerOptions;
@@ -52,7 +56,9 @@ public class YourTrulyActivity extends AppCompatActivity implements OnMapReadyCa
     FusedLocationProviderClient fusedLocationProviderClient;
     LocationRequest locationRequest;
     HandlerThread handlerThread;
-    LinearLayout currentLocation, getLocationName,getLocationDetails;
+    LinearLayout currentLocation, getLocationName, getLocationDetails;
+    Marker carLocationMarker;
+    Circle carLocationAccuracyCircle;
 
     // get Current location update continuously and app in background also
     LocationCallback locationCallBack = new LocationCallback() {
@@ -66,14 +72,20 @@ public class YourTrulyActivity extends AppCompatActivity implements OnMapReadyCa
             runOnUiThread(new Runnable() {
                 @Override
                 public void run() {
-                    //    markOnMap(locationResult.getLastLocation().getLatitude(), locationResult.getLastLocation().getLongitude(), 15, "Current Location", "Address: Nugegoda\nPhone Number: +94777");
                     //Log.d("aaaaaaa1",locationResult.getLastLocation().getLatitude() + " Longitude: " + locationResult.getLastLocation().getLongitude());
                     //  System.out.println("aaaaaaaa2 " + "Latitude: " + locationResult.getLastLocation().getLatitude() + " Longitude: " + locationResult.getLastLocation().getLongitude());
+
+                    if (googleMap != null) {
+                        movingCarMarker(locationResult.getLastLocation());
+                    }
+
+
                 }
             });
 
         }
     };
+
 
     @Override
     protected void onCreate(Bundle savedInstanceState) {
@@ -90,7 +102,7 @@ public class YourTrulyActivity extends AppCompatActivity implements OnMapReadyCa
         getLocationDetails.setOnClickListener(this);
 
 
-      //  getSupportActionBar().hide();
+        //  getSupportActionBar().hide();
 
         MapFragment mapFragment = (MapFragment) getFragmentManager().findFragmentById(R.id.map_Fragment);
         mapFragment.getMapAsync(this); //onMapReady method automatically call. your Default map
@@ -99,10 +111,8 @@ public class YourTrulyActivity extends AppCompatActivity implements OnMapReadyCa
 
         locationRequest = LocationRequest.create();
         locationRequest.setPriority(LocationRequest.PRIORITY_HIGH_ACCURACY);
-        locationRequest.setInterval(5000); // location update time
+        locationRequest.setInterval(3000); // location update time
         locationRequest.setFastestInterval(3000); // location update from the other apps in phone
-
-        //
 
         getLastLocation();
     }
@@ -199,8 +209,50 @@ public class YourTrulyActivity extends AppCompatActivity implements OnMapReadyCa
         if (ActivityCompat.checkSelfPermission(this, Manifest.permission.ACCESS_FINE_LOCATION) != PackageManager.PERMISSION_GRANTED && ActivityCompat.checkSelfPermission(this, Manifest.permission.ACCESS_COARSE_LOCATION) != PackageManager.PERMISSION_GRANTED) {
             return;
         }
-        googleMap.setMyLocationEnabled(true);
+     //   googleMap.setMyLocationEnabled(true); // to enable current location with blue color marker
         googleMap.getUiSettings().setZoomControlsEnabled(true);
+
+    }
+
+    private void movingCarMarker(Location lastLocation) {
+
+        LatLng latLng = new LatLng(lastLocation.getLatitude(),lastLocation.getLongitude());
+
+        if (carLocationMarker == null) {
+            //create new car marker
+            System.out.println("aaaaa11");
+            googleMap.clear();
+            MarkerOptions markerOptions = new MarkerOptions();
+            markerOptions.position(latLng);
+            markerOptions.icon(BitmapDescriptorFactory.fromResource(R.drawable.car_icon));
+            markerOptions.rotation(lastLocation.getBearing()); // make car icon direction towards the road.
+            markerOptions.anchor((float) 0.5,(float) 0.5);// default location fence to center of  car icon.
+            carLocationMarker = googleMap.addMarker(markerOptions);
+           // googleMap.animateCamera(CameraUpdateFactory.newLatLngZoom(latLng, 20)); // to animate camara View
+        }
+        else {
+            //update car marker
+            System.out.println("aaaaa22");
+            carLocationMarker.setPosition(latLng);
+            carLocationMarker.setRotation(lastLocation.getBearing()); // make car icon direction towards the road.
+            //googleMap.moveCamera(CameraUpdateFactory.newLatLngZoom(latLng, 20)); // to animate camara View
+
+        }
+
+        if(carLocationAccuracyCircle==null){
+
+            CircleOptions circleOptions =  new CircleOptions();
+            circleOptions.center(latLng);
+            circleOptions.strokeWidth(4);
+            circleOptions.strokeColor(Color.argb(255,255,0,0));
+            circleOptions.fillColor(Color.argb(32,255,0,0));
+            circleOptions.radius(lastLocation.getAccuracy());
+            carLocationAccuracyCircle=googleMap.addCircle(circleOptions);
+
+        }else {
+            carLocationAccuracyCircle.setCenter(latLng);
+            carLocationAccuracyCircle.setRadius(lastLocation.getAccuracy());
+        }
 
     }
 
@@ -239,7 +291,7 @@ public class YourTrulyActivity extends AppCompatActivity implements OnMapReadyCa
         Geocoder geocoder = new Geocoder(YourTrulyActivity.this, Locale.getDefault());
         try {
 
-           // List<Address> addressList = geocoder.getFromLocation(latLng.latitude, latLng.longitude, 1); // get only one results. you can add more
+            // List<Address> addressList = geocoder.getFromLocation(latLng.latitude, latLng.longitude, 1); // get only one results. you can add more
             List<Address> addressList = geocoder.getFromLocationName(location, 1); // get only one results. you can add more
 
             if (addressList.size() > 0) {
@@ -285,12 +337,10 @@ public class YourTrulyActivity extends AppCompatActivity implements OnMapReadyCa
         if (view.getId() == R.id.currentLocation) {
             checkSettingsAndStartLocationUpdates();
             //getLastLocation();
-        }
-        else if (view.getId() == R.id.getLocationName) {
+        } else if (view.getId() == R.id.getLocationName) {
 
             getLocationDetailsFromName("Nugegoda");
-        }
-        else if (view.getId() == R.id.getLocationDetails) {
+        } else if (view.getId() == R.id.getLocationDetails) {
 
             getLocationDetailsFromLatLong(new LatLng(6.8649, 79.8997));
         }
@@ -312,7 +362,7 @@ public class YourTrulyActivity extends AppCompatActivity implements OnMapReadyCa
 
     @Override
     public void onMarkerDragEnd(@NonNull Marker marker) {
-           getLocationDetailsFromLatLong(marker.getPosition());
+        getLocationDetailsFromLatLong(marker.getPosition());
 
     }
 
