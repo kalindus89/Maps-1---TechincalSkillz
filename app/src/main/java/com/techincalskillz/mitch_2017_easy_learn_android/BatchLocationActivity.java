@@ -63,7 +63,6 @@ public class BatchLocationActivity extends AppCompatActivity implements SharedPr
                 locationResultHelper.showNotification();
                 locationResultHelper.saveLastLocationResults();
 
-
                 outputText.setText(locationResultHelper.getLocationResultText());
                 //  Log.d("aaaaaaa1",locationResult.getLastLocation().getLatitude() + " Longitude: " + locationResult.getLastLocation().getLongitude());
                 //   Log.d("aaaaaaa list size ", String.valueOf(locations.size()));

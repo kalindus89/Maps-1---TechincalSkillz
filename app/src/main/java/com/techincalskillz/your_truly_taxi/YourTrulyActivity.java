@@ -3,22 +3,29 @@ package com.techincalskillz.your_truly_taxi;
 import androidx.annotation.NonNull;
 import androidx.appcompat.app.AppCompatActivity;
 import androidx.core.app.ActivityCompat;
+import androidx.core.content.ContextCompat;
 
 import android.Manifest;
+import android.app.PendingIntent;
 import android.content.IntentSender;
 import android.content.pm.PackageManager;
 import android.graphics.Color;
 import android.location.Address;
 import android.location.Geocoder;
 import android.location.Location;
+import android.os.Build;
 import android.os.Bundle;
 import android.os.HandlerThread;
+import android.util.Log;
 import android.view.View;
 import android.widget.LinearLayout;
 import android.widget.Toast;
 
 import com.google.android.gms.common.api.ResolvableApiException;
 import com.google.android.gms.location.FusedLocationProviderClient;
+import com.google.android.gms.location.Geofence;
+import com.google.android.gms.location.GeofencingClient;
+import com.google.android.gms.location.GeofencingRequest;
 import com.google.android.gms.location.LocationCallback;
 import com.google.android.gms.location.LocationRequest;
 import com.google.android.gms.location.LocationResult;
@@ -56,9 +63,13 @@ public class YourTrulyActivity extends AppCompatActivity implements OnMapReadyCa
     FusedLocationProviderClient fusedLocationProviderClient;
     LocationRequest locationRequest;
     HandlerThread handlerThread;
-    LinearLayout currentLocation, getLocationName, getLocationDetails;
+    LinearLayout currentLocation, getLocationName, getLocationDetails, geo_Fence;
     Marker carLocationMarker;
     Circle carLocationAccuracyCircle;
+    GeofencingClient geofencingClient;
+    GeoFenceHelper geoFenceHelper;
+
+    private float GEOFENCE_RADIUS = 300; // this in meters
 
     // get Current location update continuously and app in background also
     LocationCallback locationCallBack = new LocationCallback() {
@@ -101,6 +112,9 @@ public class YourTrulyActivity extends AppCompatActivity implements OnMapReadyCa
         getLocationDetails = findViewById(R.id.getLocationDetails);
         getLocationDetails.setOnClickListener(this);
 
+        geo_Fence = findViewById(R.id.geo_Fence);
+        geo_Fence.setOnClickListener(this);
+
 
         //  getSupportActionBar().hide();
 
@@ -109,12 +123,16 @@ public class YourTrulyActivity extends AppCompatActivity implements OnMapReadyCa
 
         fusedLocationProviderClient = LocationServices.getFusedLocationProviderClient(YourTrulyActivity.this);
 
+        geofencingClient = LocationServices.getGeofencingClient(this);
+        geoFenceHelper = new GeoFenceHelper(this);
+
         locationRequest = LocationRequest.create();
         locationRequest.setPriority(LocationRequest.PRIORITY_HIGH_ACCURACY);
         locationRequest.setInterval(3000); // location update time
         locationRequest.setFastestInterval(3000); // location update from the other apps in phone
 
-        checkSettingsAndStartLocationUpdates();
+        // checkSettingsAndStartLocationUpdates();
+        getLastLocation();
     }
 
     private void checkSettingsAndStartLocationUpdates() {
@@ -156,7 +174,9 @@ public class YourTrulyActivity extends AppCompatActivity implements OnMapReadyCa
     private void startLocationUpdates() {
 
 
-        if (ActivityCompat.checkSelfPermission(this, Manifest.permission.ACCESS_FINE_LOCATION) != PackageManager.PERMISSION_GRANTED && ActivityCompat.checkSelfPermission(this, Manifest.permission.ACCESS_COARSE_LOCATION) != PackageManager.PERMISSION_GRANTED) {
+        if (ActivityCompat.checkSelfPermission(this, Manifest.permission.ACCESS_FINE_LOCATION)
+                != PackageManager.PERMISSION_GRANTED && ActivityCompat.checkSelfPermission(this, Manifest.permission.ACCESS_COARSE_LOCATION)
+                != PackageManager.PERMISSION_GRANTED) {
             return;
         }
 
@@ -176,7 +196,9 @@ public class YourTrulyActivity extends AppCompatActivity implements OnMapReadyCa
 
     private void getLastLocation() {
 
-        if (ActivityCompat.checkSelfPermission(this, Manifest.permission.ACCESS_FINE_LOCATION) != PackageManager.PERMISSION_GRANTED && ActivityCompat.checkSelfPermission(this, Manifest.permission.ACCESS_COARSE_LOCATION) != PackageManager.PERMISSION_GRANTED) {
+        if (ActivityCompat.checkSelfPermission(this, Manifest.permission.ACCESS_FINE_LOCATION)
+                != PackageManager.PERMISSION_GRANTED && ActivityCompat.checkSelfPermission(this, Manifest.permission.ACCESS_COARSE_LOCATION)
+                != PackageManager.PERMISSION_GRANTED) {
 
             return;
         }
@@ -209,47 +231,45 @@ public class YourTrulyActivity extends AppCompatActivity implements OnMapReadyCa
         if (ActivityCompat.checkSelfPermission(this, Manifest.permission.ACCESS_FINE_LOCATION) != PackageManager.PERMISSION_GRANTED && ActivityCompat.checkSelfPermission(this, Manifest.permission.ACCESS_COARSE_LOCATION) != PackageManager.PERMISSION_GRANTED) {
             return;
         }
-     //   googleMap.setMyLocationEnabled(true); // to enable current location with blue color marker
+        googleMap.setMyLocationEnabled(true); // to enable current location with blue color marker
         googleMap.getUiSettings().setZoomControlsEnabled(true);
 
     }
 
     private void movingCarMarker(Location lastLocation) {
 
-        LatLng latLng = new LatLng(lastLocation.getLatitude(),lastLocation.getLongitude());
+        LatLng latLng = new LatLng(lastLocation.getLatitude(), lastLocation.getLongitude());
 
         if (carLocationMarker == null) {
             //create new car marker
-            System.out.println("aaaaa11");
             googleMap.clear();
             MarkerOptions markerOptions = new MarkerOptions();
             markerOptions.position(latLng);
             markerOptions.icon(BitmapDescriptorFactory.fromResource(R.drawable.car_icon));
             markerOptions.rotation(lastLocation.getBearing()); // make car icon direction towards the road.
-            markerOptions.anchor((float) 0.5,(float) 0.5);// default location fence to center of  car icon.
+            markerOptions.anchor((float) 0.5, (float) 0.5);// default location fence to center of  car icon.
             carLocationMarker = googleMap.addMarker(markerOptions);
             googleMap.animateCamera(CameraUpdateFactory.newLatLngZoom(latLng, 20)); // to animate camara View
-        }
-        else {
+        } else {
             //update car marker
-            System.out.println("aaaaa22");
             carLocationMarker.setPosition(latLng);
             carLocationMarker.setRotation(lastLocation.getBearing()); // make car icon direction towards the road.
             //googleMap.moveCamera(CameraUpdateFactory.newLatLngZoom(latLng, 20)); // to animate camara View
 
         }
 
-        if(carLocationAccuracyCircle==null){
+        if (carLocationAccuracyCircle == null) {
 
-            CircleOptions circleOptions =  new CircleOptions();
+            //help to create small fence
+            CircleOptions circleOptions = new CircleOptions();
             circleOptions.center(latLng);
             circleOptions.strokeWidth(4);
-            circleOptions.strokeColor(Color.argb(255,255,0,0));
-            circleOptions.fillColor(Color.argb(32,255,0,0));
+            circleOptions.strokeColor(Color.argb(255, 255, 0, 0));
+            circleOptions.fillColor(Color.argb(32, 255, 0, 0));
             circleOptions.radius(lastLocation.getAccuracy());
-            carLocationAccuracyCircle=googleMap.addCircle(circleOptions);
+            carLocationAccuracyCircle = googleMap.addCircle(circleOptions);
 
-        }else {
+        } else {
             carLocationAccuracyCircle.setCenter(latLng);
             carLocationAccuracyCircle.setRadius(lastLocation.getAccuracy());
         }
@@ -302,7 +322,8 @@ public class YourTrulyActivity extends AppCompatActivity implements OnMapReadyCa
                         + " : country code:" + addressList.get(0).getCountryCode()
                         + " Address Line " + addressList.get(0).getAddressLine(0), Toast.LENGTH_SHORT).show();
 
-                markOnMap(addressList.get(0).getLatitude(), addressList.get(0).getLongitude(), 15, addressList.get(0).getLocality(), addressList.get(0).getAddressLine(0));
+                markOnMap(addressList.get(0).getLatitude(), addressList.get(0).getLongitude(), 15,
+                        addressList.get(0).getLocality(), addressList.get(0).getAddressLine(0));
 
             }
         } catch (IOException e) {
@@ -332,17 +353,105 @@ public class YourTrulyActivity extends AppCompatActivity implements OnMapReadyCa
         }
     }
 
+
     @Override
     public void onClick(View view) {
         if (view.getId() == R.id.currentLocation) {
-            getLastLocation();
+            //getLastLocation();
+            checkSettingsAndStartLocationUpdates();
         } else if (view.getId() == R.id.getLocationName) {
-
             getLocationDetailsFromName("Nugegoda");
         } else if (view.getId() == R.id.getLocationDetails) {
-
             getLocationDetailsFromLatLong(new LatLng(6.8649, 79.8997));
+        } else if (view.getId() == R.id.geo_Fence) {
+
+
+            if (Build.VERSION.SDK_INT >= 29) {
+
+                if (ContextCompat.checkSelfPermission(this, Manifest.permission.ACCESS_BACKGROUND_LOCATION) == PackageManager.PERMISSION_GRANTED) {
+
+                    LatLng latLng = new LatLng(6.8649, 79.8997);
+                    markOnMap(6.8649, 79.8997, 17, "My Location", "Address: Nugegoda\nPhone Number: +94777");
+                    addCircle(latLng, GEOFENCE_RADIUS);
+                    addGeoFence(latLng, GEOFENCE_RADIUS);
+
+                } else {
+
+                    if (ActivityCompat.shouldShowRequestPermissionRationale(this, Manifest.permission.ACCESS_BACKGROUND_LOCATION)) {
+                        ActivityCompat.requestPermissions(this, new String[]{Manifest.permission.ACCESS_BACKGROUND_LOCATION}, 10002);
+                    }else {
+                        ActivityCompat.requestPermissions(this, new String[]{Manifest.permission.ACCESS_BACKGROUND_LOCATION}, 10002);
+
+                    }
+
+                }
+            }else{
+                LatLng latLng = new LatLng(6.8649, 79.8997);
+                markOnMap(6.8649, 79.8997, 17, "My Location", "Address: Nugegoda\nPhone Number: +94777");
+                addCircle(latLng, GEOFENCE_RADIUS);
+                addGeoFence(latLng, GEOFENCE_RADIUS);
+            }
+
+
         }
+    }
+
+    @Override
+    public void onRequestPermissionsResult(int requestCode, @NonNull String[] permissions, @NonNull int[] grantResults) {
+        super.onRequestPermissionsResult(requestCode, permissions, grantResults);
+        if (requestCode==10002) {
+
+            if(grantResults.length>0 && grantResults[0]==PackageManager.PERMISSION_GRANTED){
+
+                Toast.makeText(this, "bg service enable", Toast.LENGTH_SHORT).show();
+            }else{
+                Toast.makeText(this, "bg service not enable", Toast.LENGTH_SHORT).show();
+
+            }
+
+        }
+    }
+
+    private void addGeoFence(LatLng latLng, float radius) {
+
+
+        Geofence geofence = geoFenceHelper.getGeofence("GEOFENCE_ID", latLng, radius, Geofence.GEOFENCE_TRANSITION_ENTER | Geofence.GEOFENCE_TRANSITION_DWELL | Geofence.GEOFENCE_TRANSITION_EXIT);
+        GeofencingRequest geofencingRequest = geoFenceHelper.getGeofencingRequest(geofence);
+        PendingIntent pendingIntent = geoFenceHelper.getPendingIntent();
+
+        if (ActivityCompat.checkSelfPermission(this, Manifest.permission.ACCESS_FINE_LOCATION) != PackageManager.PERMISSION_GRANTED) {
+            return;
+        }
+        geofencingClient.addGeofences(geofencingRequest, pendingIntent)
+                .addOnSuccessListener(new OnSuccessListener<Void>() {
+                    @Override
+                    public void onSuccess(Void aVoid) {
+
+                        Log.d("TAG", "onSuccess: geo fences added");
+
+
+                    }
+                }).addOnFailureListener(new OnFailureListener() {
+            @Override
+            public void onFailure(@NonNull Exception e) {
+
+                String errorMsg = geoFenceHelper.getErrorString(e);
+                Log.d("TAG", "OnFailure: " + errorMsg);
+            }
+        });
+
+
+    }
+
+    private void addCircle(LatLng latLng, float radius) {
+        //  help to create small fence
+        CircleOptions circleOptions = new CircleOptions();
+        circleOptions.center(latLng);
+        circleOptions.radius(radius); // in meters
+        circleOptions.strokeWidth(4);
+        circleOptions.strokeColor(Color.argb(255, 255, 0, 0));
+        circleOptions.fillColor(Color.argb(64, 255, 0, 0));
+        googleMap.addCircle(circleOptions);
     }
 
     @Override
