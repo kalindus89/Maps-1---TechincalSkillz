@@ -69,7 +69,7 @@ public class YourTrulyActivity extends AppCompatActivity implements OnMapReadyCa
     GeofencingClient geofencingClient;
     GeoFenceHelper geoFenceHelper;
 
-    private float GEOFENCE_RADIUS = 200; // this in meters
+    private float GEOFENCE_RADIUS = 150; // this in meters
 
     // get Current location update continuously and app in background also
     LocationCallback locationCallBack = new LocationCallback() {
@@ -370,8 +370,8 @@ public class YourTrulyActivity extends AppCompatActivity implements OnMapReadyCa
 
                 if (ContextCompat.checkSelfPermission(this, Manifest.permission.ACCESS_BACKGROUND_LOCATION) == PackageManager.PERMISSION_GRANTED) {
 
-                    LatLng latLng = new LatLng(6.8649, 79.8997);
-                    markOnMap(6.8649, 79.8997, 17, "My Location", "Address: Nugegoda\nPhone Number: +94777");
+                    LatLng latLng = new LatLng(6.877686602804882, 79.8935784486387);
+                    markOnMap(6.877686602804882, 79.8935784486387, 17, "My Location", "Address: Nugegoda\nPhone Number: +94777");
                     addCircle(latLng, GEOFENCE_RADIUS);
                     addGeoFence(latLng, GEOFENCE_RADIUS);
 
@@ -386,8 +386,8 @@ public class YourTrulyActivity extends AppCompatActivity implements OnMapReadyCa
 
                 }
             }else{
-                LatLng latLng = new LatLng(6.8649, 79.8997);
-                markOnMap(6.8649, 79.8997, 17, "My Location", "Address: Nugegoda\nPhone Number: +94777");
+                LatLng latLng = new LatLng(6.877686602804882, 79.8935784486387);
+                markOnMap(6.877686602804882, 79.8935784486387, 17, "My Location", "Address: Nugegoda\nPhone Number: +94777");
                 addCircle(latLng, GEOFENCE_RADIUS);
                 addGeoFence(latLng, GEOFENCE_RADIUS);
             }
