@@ -69,7 +69,7 @@ public class YourTrulyActivity extends AppCompatActivity implements OnMapReadyCa
     GeofencingClient geofencingClient;
     GeoFenceHelper geoFenceHelper;
 
-    private float GEOFENCE_RADIUS = 300; // this in meters
+    private float GEOFENCE_RADIUS = 200; // this in meters
 
     // get Current location update continuously and app in background also
     LocationCallback locationCallBack = new LocationCallback() {
@@ -415,7 +415,7 @@ public class YourTrulyActivity extends AppCompatActivity implements OnMapReadyCa
     private void addGeoFence(LatLng latLng, float radius) {
 
 
-        Geofence geofence = geoFenceHelper.getGeofence("GEOFENCE_ID", latLng, radius, Geofence.GEOFENCE_TRANSITION_ENTER | Geofence.GEOFENCE_TRANSITION_DWELL | Geofence.GEOFENCE_TRANSITION_EXIT);
+        Geofence geofence = geoFenceHelper.getGeofence("GEOFENCE_RequestId", latLng, radius, Geofence.GEOFENCE_TRANSITION_ENTER | Geofence.GEOFENCE_TRANSITION_DWELL | Geofence.GEOFENCE_TRANSITION_EXIT);
         GeofencingRequest geofencingRequest = geoFenceHelper.getGeofencingRequest(geofence);
         PendingIntent pendingIntent = geoFenceHelper.getPendingIntent();
 
