@@ -25,7 +25,7 @@
             android:exported="true" />
 
         <activity
-            android:name=".mitch_2017_easy_learn_android.MapFragmentActivity"
+            android:name=".MainActivity"
             android:exported="false" />
 
         <service
@@ -40,10 +40,10 @@
             android:name=".mitch_2017_easy_learn_android.BatchLocationActivity"
             android:exported="false" />
         <activity
-            android:name=".MainActivity"
+            android:name=".your_truly_taxi.YourTrulyActivity"
             android:exported="false" />
         <activity
-            android:name=".your_truly_taxi.YourTrulyActivity"
+            android:name=".mitch_2017_easy_learn_android.MapFragmentActivity"
             android:exported="true">
             <intent-filter>
                 <action android:name="android.intent.action.MAIN" />
